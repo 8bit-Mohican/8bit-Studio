@@ -10,6 +10,8 @@
 #include "include/cc65-libmouse.h"
 #include "include/cc65-libstl.h"
 
+#define MAXMESH 8
+
 
 /*****************************************************************************/
 /*                                 Main Code                                 */
@@ -17,17 +19,24 @@
 
 int main (void) 
 {
+	unsigned int i;
 	bool doRender = true;
 	clock_t time;
 	
-	fix8 *dim[9], *pos[9];
-	int nVerts[9], nTris[9];
-	fix8 *verts[9], *norms[9];
-	int *tris[9], *pxls[9];
+	fix8 *dim[MAXMESH], *pos[MAXMESH];
+	int nVerts[MAXMESH], nTris[MAXMESH];
+	fix8 *verts[MAXMESH], *norms[MAXMESH];
+	int *tris[MAXMESH], *pxls[MAXMESH];
 	
 	clrscr ();	
-	gotoxy (0, 0); cprintf ("Generating Meshes...");
-
+	gotoxy (0, 0); cprintf ("Initializing...");
+	
+	// Initialize position/dimension
+	for (i = 0; i < MAXMESH; ++i) {
+		dim[i] = (fix8*) malloc (3*sizeof(fix8));
+		pos[i] = (fix8*) malloc (3*sizeof(fix8));
+	}
+	
 	// Read STL Mesh
 	ReadSTL("commodore.stl", &nVerts[0], &nTris[0], &verts[0], &norms[0], &tris[0]);
 /*	gotoxy (0, 5); cprintf ("Triangle:%d,%d,%d", (*tris)[0], (*tris)[1], (*tris)[2]);
@@ -37,14 +46,10 @@ int main (void)
 	gotoxy (0, 9); cprintf ("Normal:%ld,%ld,%ld", (*norms)[0], (*norms)[1], (*norms)[2]);
 */	
 	// Create Boxes
-	dim[1] = (fix8*) malloc (3*sizeof(fix8));
-	pos[1] = (fix8*) malloc (3*sizeof(fix8));
 	dim[1][0] = Int2Fix8(10); dim[1][1] = Int2Fix8(10); dim[1][2] = Int2Fix8(10);
 	pos[1][0] = Int2Fix8(-20); pos[1][1] = Int2Fix8(0); pos[1][2] = Int2Fix8(0);	
 	CreateBox(dim[1], pos[1], &nVerts[1], &nTris[1], &verts[1], &norms[1], &tris[1]);
 
-	dim[2] = (fix8*) malloc (3*sizeof(fix8));
-	pos[2] = (fix8*) malloc (3*sizeof(fix8));
 	dim[2][0] = Int2Fix8(10); dim[2][1] = Int2Fix8(10); dim[2][2] = Int2Fix8(10);
 	pos[2][0] = Int2Fix8(20); pos[2][1] = Int2Fix8(0); pos[2][2] = Int2Fix8(0);	
 	CreateBox(dim[2], pos[2], &nVerts[2], &nTris[2], &verts[2], &norms[2], &tris[2]);

@@ -107,6 +107,8 @@ static void RenderAxes()
 	tgi_setcolor (COLOR_FORE);
 	
 	/* Draw axes */
+	tgi_line(0, 169, 33, 169);
+	tgi_line(33, 169, 33, 199);
 	tgi_line(pX1[0], pX1[1]+169, pX2[0], pX2[1]+169);
 	tgi_line(pY1[0], pY1[1]+169, pY2[0], pY2[1]+169);	
 	//tgi_line(pZ1[0], pZ1[1], pZ2[0], pZ2[1]);	
