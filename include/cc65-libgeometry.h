@@ -4,7 +4,7 @@
 
 #include "cc65-libmatrix.h"
 
-static void CreateBox(fix8 dimensions[3], fix8 position[3], int *nVerts, int *nTris, fix8 **verts, fix8 **norms, int **tris)
+static void CreateBox(fix8 dimensions[3], fix8 position[3], int *nVerts, int *nTris, fix8 **verts, fix8 **norms, int **tris, int **pxls)
 {
 	int v = 0;
 	int n = 0;
@@ -16,6 +16,7 @@ static void CreateBox(fix8 dimensions[3], fix8 position[3], int *nVerts, int *nT
 	/* Allocate memory */
 	(*verts) = (fix8*) malloc ((*nVerts)*3*sizeof(fix8));
 	(*norms) = (fix8*) malloc ((*nTris)*3*sizeof(fix8));
+	(*pxls) = (int*) malloc ((*nVerts)*2*sizeof(int));
 	(*tris) = (int*) malloc ((*nTris)*3*sizeof(int));
 	
 	/* Generate vertices */	

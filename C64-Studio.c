@@ -37,22 +37,23 @@ int main (void)
 		pos[i] = (fix8*) malloc (3*sizeof(fix8));
 	}
 	
+	// Create Box
+	dim[0][0] = Int2Fix8(10); dim[0][1] = Int2Fix8(10); dim[0][2] = Int2Fix8(10);
+	pos[0][0] = Int2Fix8(0); pos[0][1] = Int2Fix8(-20); pos[0][2] = Int2Fix8(0);	
+	CreateBox(dim[0], pos[0], &nVerts[0], &nTris[0], &verts[0], &norms[0], &tris[0], &pxls[0]);
+
+	dim[1][0] = Int2Fix8(10); dim[1][1] = Int2Fix8(10); dim[1][2] = Int2Fix8(10);
+	pos[1][0] = Int2Fix8(-20); pos[1][1] = Int2Fix8(0); pos[1][2] = Int2Fix8(0);	
+	CreateBox(dim[1], pos[1], &nVerts[1], &nTris[1], &verts[1], &norms[1], &tris[1], &pxls[1]);
+	
 	// Read STL Mesh
-	ReadSTL("commodore.stl", &nVerts[0], &nTris[0], &verts[0], &norms[0], &tris[0]);
+	ReadSTL("commodore.stl", &nVerts[2], &nTris[2], &verts[2], &norms[2], &tris[2], &pxls[2]);
 /*	gotoxy (0, 5); cprintf ("Triangle:%d,%d,%d", (*tris)[0], (*tris)[1], (*tris)[2]);
 	gotoxy (0, 6); cprintf ("Vertice1:%ld,%ld,%ld", (*verts)[0], (*verts)[1], (*verts)[2]);
 	gotoxy (0, 7); cprintf ("Vertice2:%ld,%ld,%ld", (*verts)[3], (*verts)[4], (*verts)[5]);
 	gotoxy (0, 8); cprintf ("Vertice3:%ld,%ld,%ld", (*verts)[6], (*verts)[7], (*verts)[8]);
 	gotoxy (0, 9); cprintf ("Normal:%ld,%ld,%ld", (*norms)[0], (*norms)[1], (*norms)[2]);
 */	
-	// Create Boxes
-	dim[1][0] = Int2Fix8(10); dim[1][1] = Int2Fix8(10); dim[1][2] = Int2Fix8(10);
-	pos[1][0] = Int2Fix8(-20); pos[1][1] = Int2Fix8(0); pos[1][2] = Int2Fix8(0);	
-	CreateBox(dim[1], pos[1], &nVerts[1], &nTris[1], &verts[1], &norms[1], &tris[1]);
-
-	dim[2][0] = Int2Fix8(10); dim[2][1] = Int2Fix8(10); dim[2][2] = Int2Fix8(10);
-	pos[2][0] = Int2Fix8(20); pos[2][1] = Int2Fix8(0); pos[2][2] = Int2Fix8(0);	
-	CreateBox(dim[2], pos[2], &nVerts[2], &nTris[2], &verts[2], &norms[2], &tris[2]);
 	
 	// Initialize Screen
 	StartTGI();

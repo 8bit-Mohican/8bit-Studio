@@ -11,7 +11,7 @@
 #define GET_WORD(p) (*(p) + ((unsigned) (p)[1] << 8))
 #define GET_LONG(p) (GET_WORD(p) + ((unsigned long) GET_WORD(p + 2) << 16))
 
-static void ReadSTL(char *filename, int *nVerts, int *nTris, fix8 **verts, fix8 **norms, int **tris) 
+static void ReadSTL(char *filename, int *nVerts, int *nTris, fix8 **verts, fix8 **norms, int **tris, int **pxls) 
 {
 	int v = 0;
 	int n = 0;
@@ -40,6 +40,7 @@ static void ReadSTL(char *filename, int *nVerts, int *nTris, fix8 **verts, fix8 
 	// Allocate memory //
 	(*verts) = (fix8*) malloc ((*nVerts)*3*sizeof(fix8));
 	(*norms) = (fix8*) malloc ((*nTris)*3*sizeof(fix8));
+	(*pxls) = (int*) malloc ((*nVerts)*2*sizeof(int));
 	(*tris) = (int*) malloc ((*nTris)*3*sizeof(int));
 	
 	// Read data from file
