@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*                                 TGI Stuff                                 */
+/*                               Drawing Stuff                               */
 /*****************************************************************************/
 
 #include <tgi.h>
@@ -12,10 +12,15 @@
 #define COLOR_BORDER    15					// Light-Grey
 #define COLOR_FORE      TGI_COLOR_WHITE
 
+int screenW = 220;
+int screenH = 200;
+
 static unsigned MaxX;
 static unsigned MaxY;
 static unsigned AspectRatio;
+
 static const tgi_vectorfont* font = 0;
+
 
 static void CheckTGIError (const char* S) 
 {
@@ -85,6 +90,18 @@ static void StopTGI ()
 #endif
 }
 
+static void DrawLine(int x0, int y0, int x1, int y1)
+{
+	// Line Drawing
+	if (x0 <= screenW && x1 <= screenW) {
+		tgi_line(x0, y0, x1, y1);
+	} else if (x0 <= screenW && x1 > screenW) {
+		tgi_line(x0, y0, screenW, y0+((y1-y0)*(screenW-x0))/(x1-x0));
+	} else if (x0 > screenW && x1 <= screenW) {
+		tgi_line(screenW, y1+((y0-y1)*(screenW-x1))/(x0-x1), x1, y1);
+	}	
+}
+
 static void DrawButton (int x, int y, int w, int h, char *text) 
 {
 	// Box
@@ -103,7 +120,6 @@ static void DrawPanel ()
 	tgi_outtextxy(240, 10, "C64 Studio");	
 	DrawButton(230, 20, 80, 12, "Add Box");
 }
-
 
 static void ShowStats (clock_t t, unsigned long f) 
 {

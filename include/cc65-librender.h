@@ -2,11 +2,9 @@
 /*                              Rendering Library                            */
 /*****************************************************************************/
 
+#include "cc65-libdraw.h"
+#include "cc65-libmath.h"
 #include "cc65-libmatrix.h"
-#include "cc65-libtgi.h"
-
-int screenW = 220;
-int screenH = 200;
 
 fix8 canvasW = 2*256;
 fix8 canvasH = 2*256;
@@ -41,92 +39,81 @@ static void UpdateCamera()
 	camVec[2] = -xCos;	
 }
 
+fix8 canPt[2];
 int scrPt[2];
 
-static void PixelCoords(fix8 pWorld[3])
+static void PixelCoords(fix8 wldPt[3])
 {
-	fix8 pScreen[2];
+	MatrixVectorMult(worldToCamera, wldPt);
+    canPt[0] = (256 * MVM[0]) / -MVM[2]; 
+    canPt[1] = (256 * MVM[1]) / -MVM[2];
 
-	MatrixVectorMult(worldToCamera, pWorld);
-    pScreen[0] = (256 * MVM[0]) / -MVM[2]; 
-    pScreen[1] = (256 * MVM[1]) / -MVM[2];
-
-    scrPt[0] = screenW * (pScreen[0] + canvasW/2) / canvasW;
-    scrPt[1] = screenH - screenH * (pScreen[1] + canvasH/2) / canvasH;
+    scrPt[0] = screenW * (canPt[0] + canvasW/2) / canvasW;
+    scrPt[1] = screenH - screenH * (canPt[1] + canvasH/2) / canvasH;
 }
 
+fix8 wldPt[3];
+
 static void Rasterize(int nVerts, fix8 *verts, int **pxls)
-{
-	fix8 pWorld[3];
-	int i;
-	
+{	
 	// Project points to screen
+	int i;
 	for (i = 0; i < nVerts; ++i) {
-		pWorld[0] = verts[i*3+0]; pWorld[1] = verts[i*3+1]; pWorld[2] = verts[i*3+2];
-		PixelCoords(pWorld);
+		wldPt[0] = verts[i*3+0]; wldPt[1] = verts[i*3+1]; wldPt[2] = verts[i*3+2];
+		PixelCoords(wldPt);
 		(*pxls)[i*2+0] = scrPt[0]; (*pxls)[i*2+1] = scrPt[1];
 	}
 }
 
-static void DrawLine(int x0, int y0, int x1, int y1)
-{
-	if (x0 <= screenW && x1 <= screenW) {
-		tgi_line(x0, y0, x1, y1);
-	} else if (x0 <= screenW && x1 > screenW) {
-		tgi_line(x0, y0, screenW, y0+((y1-y0)*(screenW-x0))/(x1-x0));
-	} else if (x0 > screenW && x1 <= screenW) {
-		tgi_line(screenW, y1+((y0-y1)*(screenW-x1))/(x0-x1), x1, y1);
-	}	
-}
-
-fix8 wX1[3] = {256*-50, 0, 0};
-fix8 wX2[3] = {256*50, 0, 0};
-fix8 wY1[3] = {0, 256*-50, 0};
-fix8 wY2[3] = {0, 256*50, 0};
+fix8 wX[3] = {256*30, 0, 0};
+fix8 wY[3] = {0, 256*30, 0};
 
 static void RenderAxes() 
 {
-	int pX1[2], pX2[2];
-	int pY1[2], pY2[2]; 
-	//int pZ1[2], pZ2[2]; 
+	int pX[2], pY[2];
+	int vX[2], vY[2];
+	int nX, nY;
 
-	/* Shrink render */
-	screenW = 33; screenH = 30;
+	// Shrink render
+	screenW = 30; screenH = 30;
 	
-	/* Rasterize */
-	PixelCoords(wX1);
-	pX1[0] = scrPt[0]; pX1[1] = scrPt[1];
-	PixelCoords(wX2);
-	pX2[0] = scrPt[0]; pX2[1] = scrPt[1];
-	PixelCoords(wY1);
-	pY1[0] = scrPt[0]; pY1[1] = scrPt[1];
-	PixelCoords(wY2);
-	pY2[0] = scrPt[0]; pY2[1] = scrPt[1];
+	// Rasterize 
+	PixelCoords(wX);
+	pX[0] = scrPt[0]; pX[1] = scrPt[1];
+	PixelCoords(wY);
+	pY[0] = scrPt[0]; pY[1] = scrPt[1];
 
-	/* Blank the sector */
+	// Compute Vectors
+	vX[0] = pX[0]-15; vX[1] = pX[1]-15; 
+	vY[0] = pY[0]-15; vY[1] = pY[1]-15;
+	nX = iSqrt(vX[0]*vX[0]+vX[1]*vX[1]);
+	nY = iSqrt(vY[0]*vY[0]+vY[1]*vY[1]);
+	
+	// Reset block
 	tgi_setcolor (COLOR_BACK);
-	tgi_bar(0, 169, screenW-1, 169+screenH-1);
+	tgi_bar(0, 169, screenW, 169+screenH);
 	tgi_setcolor (COLOR_FORE);
+	tgi_line(0, 169, 30, 169);
+	tgi_line(30, 169, 30, 199);
 	
-	/* Draw axes */
-	tgi_line(0, 169, 33, 169);
-	tgi_line(33, 169, 33, 199);
-	DrawLine(pX1[0], pX1[1]+169, pX2[0], pX2[1]+169);
-	DrawLine(pY1[0], pY1[1]+169, pY2[0], pY2[1]+169);	
-	//tgi_line(pZ1[0], pZ1[1], pZ2[0], pZ2[1]);	
+	// Draw axes
+	DrawLine(14-(15*vX[0])/nX, 183-(15*vX[1])/nX, 14+(7*vX[0])/nX, 183+(7*vX[1])/nX);
+	DrawLine(14-(15*vY[0])/nY, 183-(15*vY[1])/nY, 14+(7*vY[0])/nY, 183+(7*vY[1])/nY);
+
+	// Draw labels
+	tgi_outtextxy(14+(11*vX[0])/nX-2, 183+(11*vX[1])/nX+2, "x");
+	tgi_outtextxy(14+(11*vY[0])/nY-2, 183+(11*vY[1])/nY+2, "y");
 	
-	/* Restore render */
+	// Restore render
 	screenW = 220; screenH = 200;
 }
 
-fix8 normal[3];
-
 static void RenderMesh(int nTris, int *tris, fix8 *norms, int *wXls) 
 {
+	fix8 normal[3];
 	unsigned int i,x0,y0,x1,y1,x2,y2;				
 
 	/* Draw all triangles */
-	tgi_setcolor (COLOR_FORE);
 	for (i = 0; i < nTris; ++i) {
 		normal[0] = norms[i*3+0];
 		normal[1] = norms[i*3+1];
@@ -147,5 +134,6 @@ static void ResetCanvas()
 	// Reset canvas
 	tgi_setcolor (COLOR_BACK);
 	tgi_bar(0, 0, screenW-1, screenH-1);
+	tgi_setcolor (COLOR_FORE);	
 }
 	
