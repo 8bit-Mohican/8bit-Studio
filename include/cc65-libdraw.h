@@ -110,21 +110,77 @@ static void DrawLine(int x0, int y0, int x1, int y1)
 
 static void DrawButton (int x, int y, int w, int h, char *text) 
 {
-	// Box
 	tgi_line(x, y, x+w, y);	
 	tgi_line(x, y+h, x+w, y+h);	
 	tgi_line(x, y, x, y+h);	
 	tgi_line(x+w, y, x+w, y+h);	
-	tgi_outtextxy(x+20, y+h-3, text);
+	tgi_outtextxy(x+5, y+h-3, text);
 }
 
-static void DrawPanel () 
+static void DrawList (int x, int y, int w, int h,  int guiSel, const char *names[]) 
 {
-	// Separator
+	int i = 0;
+	tgi_line(x, y, x+w, y);	
+	tgi_line(x, y+h, x+w, y+h);	
+	tgi_line(x, y, x, y+h);	
+	tgi_line(x+w, y, x+w, y+h);	
+	tgi_line(x+w-10, y, x+w-10, y+h);	
+	while (names[i] != NULL && i<9) {
+		if (i==guiSel) {
+			tgi_setcolor (COLOR_FORE);
+			tgi_bar(x+8, y+(i+1)*12-10, x+w-18, y+(i+1)*12-2);
+			tgi_setcolor (COLOR_BACK);
+			tgi_outtextxy(x+10, y+(i+1)*12-3, names[i]);
+			tgi_setcolor (COLOR_FORE);
+		} else {
+			tgi_outtextxy(x+10, y+(i+1)*12-3, names[i]);
+		}
+		i++;
+	}
+}
+
+static void DrawGUI (int guiSel, const char *names[], fix8 pos[3], fix8 rot[3], fix8 dim[3]) 
+{
+	char dump[8];
+	
+	// Separators
 	tgi_setcolor (COLOR_FORE);
 	tgi_line(220, 0, 220, 200);
+	tgi_line(220, 120, 319, 120);
+	
+	// Top Section
 	tgi_outtextxy(240, 10, "C64 Studio");	
-	DrawButton(230, 20, 80, 12, "Add Box");
+	DrawList(230, 18, 80, 48, guiSel, names);
+
+	tgi_outtextxy(225, 80, "Pos:");
+	snprintf(dump, 8, "%ld", pos[0]/256);
+	tgi_outtextxy(250, 80, dump);
+	snprintf(dump, 8, "%ld", pos[1]/256);
+	tgi_outtextxy(275, 80, dump);
+	snprintf(dump, 8, "%ld", pos[2]/256);
+	tgi_outtextxy(300, 80, dump);
+
+	tgi_outtextxy(225, 95, "Rot:");
+	snprintf(dump, 8, "%ld", rot[0]/256);
+	tgi_outtextxy(250, 95, dump);
+	snprintf(dump, 8, "%ld", rot[1]/256);
+	tgi_outtextxy(275, 95, dump);
+	snprintf(dump, 8, "%ld", rot[2]/256);
+	tgi_outtextxy(300, 95, dump);
+	
+	tgi_outtextxy(225, 110, "Dim:");
+	snprintf(dump, 8, "%ld", dim[0]/256);
+	tgi_outtextxy(250, 110, dump);
+	snprintf(dump, 8, "%ld", dim[1]/256);
+	tgi_outtextxy(275, 110, dump);
+	snprintf(dump, 8, "%ld", dim[2]/256);
+	tgi_outtextxy(300, 110, dump);
+	
+	// Bottom Section
+	DrawButton(230, 125, 80, 12, "Add Primitive");
+	DrawButton(230, 140, 80, 12, "Perform Bool");
+	DrawButton(230, 160, 80, 12, "Load Scene");
+	DrawButton(230, 175, 80, 12, "Save Scene");
 }
 
 static void ShowStats (clock_t t, unsigned long f) 
