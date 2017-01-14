@@ -12,21 +12,22 @@
 #define GET_WORD(p) (*(p) + ((unsigned) (p)[1] << 8))
 #define GET_LONG(p) (GET_WORD(p) + ((unsigned long) GET_WORD(p + 2) << 16))
 
-static void ReadSTL(char *filename, int *nVerts, int *nTris, fix8 **verts, fix8 **norms, int **tris, int **pxls) 
+const char* ReadSTL(char *filename, int *nVerts, int *nTris, fix8 **verts, fix8 **norms, int **tris, int **pxls) 
 {
-	FILE* fp;
+	static char name[] = "Logo";
 	int v = 0; int n = 0; int t = 0;	
 	unsigned char header[80];
 	unsigned char buffer[4];
 	unsigned int i,j,k;
 	fix8 vX, vY, vZ;
 	unsigned int vN;
+	FILE* fp;
 	
 	// Try to open file...
 	fp = fopen(filename, "rb");
 	if (!fp) {
 		printf ("Can't open Mesh...\n");
-		return;
+		return NULL;
 	}
 
 	// Read Header
@@ -38,7 +39,7 @@ static void ReadSTL(char *filename, int *nVerts, int *nTris, fix8 **verts, fix8 
 	printf ("Header: %s\n", header);	
 	printf ("Triangles: %d\n", GET_WORD(buffer));
 	
-	// Allocate memory
+	// Allocate memory for triangles/normals/vertices
 	AllocateInt(tris, (*nTris)*3);
 	AllocateFix8(norms, (*nTris)*3);
 	AllocateFix8(verts, (*nVerts)*3);
@@ -89,12 +90,15 @@ static void ReadSTL(char *filename, int *nVerts, int *nTris, fix8 **verts, fix8 
 		fread(buffer, 2, 1, fp);		
 	}
 	
-	// Shrink Vertices Memory
+	// Shrink vertices memory
 	(*nVerts) = v/3;
+	//ReAllocateFix8(verts, (*nVerts)*3);
 	printf ("Vertices: %d\n", (*nVerts));	
-	(*verts) = (fix8*) realloc ((*verts), (*nVerts)*3*sizeof(fix8));
-	AllocateInt(pxls, (*nVerts)*3);
+	
+	// Allocate pixel data in main memory (for fast drawing)
+	(*pxls) = (int*) malloc ((*nVerts)*2*sizeof(int));
 	
 	// Close file
 	fclose(fp);
+	return name;
 }

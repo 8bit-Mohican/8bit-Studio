@@ -2,6 +2,8 @@
 /*                              Rendering Library                            */
 /*****************************************************************************/
 
+#include <stdbool.h>
+
 #include "cc65-libdraw.h"
 #include "cc65-libmath.h"
 #include "cc65-libmatrix.h"
@@ -43,7 +45,7 @@ static void UpdateCamera()
 fix8 canPt[2];
 int scrPt[2];
 
-static void PixelCoords(fix8 wldPt[3])
+static void ComputePixel(fix8 wldPt[3])
 {
 	MatrixVectorMult(worldToCamera, wldPt);
     canPt[0] = (256 * MVM[0]) / -MVM[2]; 
@@ -63,9 +65,9 @@ static void Rasterize(int nVerts, fix8 **verts, int **pxls)
 		wldPt[0] = ReadFix8(verts, i*3+0); 
 		wldPt[1] = ReadFix8(verts, i*3+1); 
 		wldPt[2] = ReadFix8(verts, i*3+2);
-		PixelCoords(wldPt);
-		WriteInt(pxls, i*2+0, scrPt[0]); 
-		WriteInt(pxls, i*2+1, scrPt[1]); 
+		ComputePixel(wldPt);
+		(*pxls)[i*2+0] = scrPt[0]; 
+		(*pxls)[i*2+1] = scrPt[1]; 
 	}
 }
 
@@ -82,9 +84,9 @@ static void RenderAxes()
 	screenW = 30; screenH = 30;
 	
 	// Rasterize 
-	PixelCoords(wX);
+	ComputePixel(wX);
 	pX[0] = scrPt[0]; pX[1] = scrPt[1];
-	PixelCoords(wY);
+	ComputePixel(wY);
 	pY[0] = scrPt[0]; pY[1] = scrPt[1];
 
 	// Compute Vectors
@@ -114,32 +116,47 @@ static void RenderAxes()
 	screenW = 220; screenH = 200;
 }
 
-static void RenderMesh(int nTris, int **tris, fix8 **norms, int **wXls) 
+static void RenderMesh(int nTris, int **tris, fix8 **norms, int **pxls) 
 {
 	fix8 normal[3];
 	int vertices[3];	
-	unsigned int i,x0,y0,x1,y1,x2,y2;				
+	unsigned int i,x0,y0,x1,y1,x2,y2;
+	bool *visible = (bool*) malloc (nTris/8+1);
 
-	/* Draw all triangles */
+	// Check normals against camera in first loop
+	// (this allows sequential reading of data in REU)
 	for (i = 0; i < nTris; ++i) {
 		normal[0] = ReadFix8(norms, i*3+0);
 		normal[1] = ReadFix8(norms, i*3+1);
 		normal[2] = ReadFix8(norms, i*3+2);
 		if (VectorVectorDot(normal,camVec) > 0) {
+			visible[i] = true;
+		} else {
+			visible[i] = false;			
+		}
+	}
+		
+	// Draw visible triangles in second loop
+	// (this allows sequential reading of data in REU)
+	for (i = 0; i < nTris; ++i) {
+		if (visible[i]) {
 			vertices[0] = ReadInt(tris, i*3+0);
 			vertices[1] = ReadInt(tris, i*3+1);
 			vertices[2] = ReadInt(tris, i*3+2);
-			x0 = ReadInt(wXls, vertices[0]*2+0); 
-			y0 = ReadInt(wXls, vertices[0]*2+1);
-			x1 = ReadInt(wXls, vertices[1]*2+0); 
-			y1 = ReadInt(wXls, vertices[1]*2+1);
-			x2 = ReadInt(wXls, vertices[2]*2+0); 
-			y2 = ReadInt(wXls, vertices[2]*2+1);
+			x0 = (*pxls)[vertices[0]*2+0]; 
+			y0 = (*pxls)[vertices[0]*2+1];
+			x1 = (*pxls)[vertices[1]*2+0]; 
+			y1 = (*pxls)[vertices[1]*2+1];
+			x2 = (*pxls)[vertices[2]*2+0]; 
+			y2 = (*pxls)[vertices[2]*2+1];
 			DrawLine(x0, y0, x1, y1);
 			DrawLine(x1, y1, x2, y2);
 			DrawLine(x2, y2, x0, y0);
 		}
 	}
+	
+	// Free memory
+	free(visible);
 }
 
 static void ResetCanvas()
