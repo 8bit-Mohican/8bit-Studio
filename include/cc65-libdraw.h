@@ -39,16 +39,16 @@ static const tgi_vectorfont* LoadFont (const char* Name)
 {   
     const tgi_vectorfont* F;
 
-    cprintf ("Loading %s...\n", Name);
     F = tgi_load_vectorfont (Name);
     CheckTGIError ("tgi_load_vectorfont");
     return F;
 }
 
-static void StartTGI () 
+static void InitTGI () 
 {
     //static const unsigned char Palette[2] = { COLOR_BACK, COLOR_FORE };
 	
+	printf ("Loading Video Driver...\n");	
 #if DYN_DRV
     /* Load the driver */
     tgi_load_driver (tgi_stddrv);
@@ -59,24 +59,30 @@ static void StartTGI ()
     CheckTGIError ("tgi_install");
 #endif
 
-    /* Initialize the driver */
+	/* Load the vector fonts */
+	printf ("Loading Font (litt.tch)...\n");
+    font = LoadFont ("litt.tch");
+    tgi_install_vectorfont (font);
+}
+
+static void StartTGI ()
+{
+    // Initialize Video Mode
     bordercolor (COLOR_BORDER);
     tgi_init ();
     CheckTGIError ("tgi_init");
 	tgi_clear ();
 
-    /* Get stuff from the driver */
+    // Get stuff from the driver
     MaxX = tgi_getmaxx ();
     MaxY = tgi_getmaxy ();
     AspectRatio = tgi_getaspectratio ();
-
-	/* Load the vector fonts */
-    font = LoadFont ("litt.tch");
-    tgi_install_vectorfont (font);
+	
+	// Set Text Style
 	tgi_settextstyle (0x100, 0x100, TGI_TEXT_HORIZONTAL, TGI_FONT_VECTOR);
 		
 	/* Set the palette, set the border color */
-    //tgi_setpalette (Palette);
+    //tgi_setpalette (Palette);	
 }
 
 static void StopTGI () 

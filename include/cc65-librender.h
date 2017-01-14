@@ -5,6 +5,7 @@
 #include "cc65-libdraw.h"
 #include "cc65-libmath.h"
 #include "cc65-libmatrix.h"
+#include "cc65-libmemory.h"
 
 fix8 canvasW = 2*256;
 fix8 canvasH = 2*256;
@@ -54,14 +55,17 @@ static void PixelCoords(fix8 wldPt[3])
 
 fix8 wldPt[3];
 
-static void Rasterize(int nVerts, fix8 *verts, int **pxls)
+static void Rasterize(int nVerts, fix8 **verts, int **pxls)
 {	
 	// Project points to screen
 	int i;
 	for (i = 0; i < nVerts; ++i) {
-		wldPt[0] = verts[i*3+0]; wldPt[1] = verts[i*3+1]; wldPt[2] = verts[i*3+2];
+		wldPt[0] = ReadFix8(verts, i*3+0); 
+		wldPt[1] = ReadFix8(verts, i*3+1); 
+		wldPt[2] = ReadFix8(verts, i*3+2);
 		PixelCoords(wldPt);
-		(*pxls)[i*2+0] = scrPt[0]; (*pxls)[i*2+1] = scrPt[1];
+		WriteInt(pxls, i*2+0, scrPt[0]); 
+		WriteInt(pxls, i*2+1, scrPt[1]); 
 	}
 }
 
@@ -96,32 +100,41 @@ static void RenderAxes()
 	tgi_line(0, 169, 30, 169);
 	tgi_line(30, 169, 30, 199);
 	
-	// Draw axes
-	DrawLine(14-(15*vX[0])/nX, 183-(15*vX[1])/nX, 14+(7*vX[0])/nX, 183+(7*vX[1])/nX);
-	DrawLine(14-(15*vY[0])/nY, 183-(15*vY[1])/nY, 14+(7*vY[0])/nY, 183+(7*vY[1])/nY);
-
-	// Draw labels
-	tgi_outtextxy(14+(11*vX[0])/nX-2, 183+(11*vX[1])/nX+2, "x");
-	tgi_outtextxy(14+(11*vY[0])/nY-2, 183+(11*vY[1])/nY+2, "y");
+	// Draw axes and labels
+	if (nX > 0) {
+		DrawLine(14-(15*vX[0])/nX, 183-(15*vX[1])/nX, 14+(7*vX[0])/nX, 183+(7*vX[1])/nX);
+		tgi_outtextxy(14+(11*vX[0])/nX-2, 183+(11*vX[1])/nX+2, "x");
+	}
+	if (nY > 0) {
+		DrawLine(14-(15*vY[0])/nY, 183-(15*vY[1])/nY, 14+(7*vY[0])/nY, 183+(7*vY[1])/nY);
+		tgi_outtextxy(14+(11*vY[0])/nY-2, 183+(11*vY[1])/nY+2, "y");
+	}
 	
 	// Restore render
 	screenW = 220; screenH = 200;
 }
 
-static void RenderMesh(int nTris, int *tris, fix8 *norms, int *wXls) 
+static void RenderMesh(int nTris, int **tris, fix8 **norms, int **wXls) 
 {
 	fix8 normal[3];
+	int vertices[3];	
 	unsigned int i,x0,y0,x1,y1,x2,y2;				
 
 	/* Draw all triangles */
 	for (i = 0; i < nTris; ++i) {
-		normal[0] = norms[i*3+0];
-		normal[1] = norms[i*3+1];
-		normal[2] = norms[i*3+2];
+		normal[0] = ReadFix8(norms, i*3+0);
+		normal[1] = ReadFix8(norms, i*3+1);
+		normal[2] = ReadFix8(norms, i*3+2);
 		if (VectorVectorDot(normal,camVec) > 0) {
-			x0 = wXls[tris[i*3+0]*2+0]; y0 = wXls[tris[i*3+0]*2+1];
-			x1 = wXls[tris[i*3+1]*2+0]; y1 = wXls[tris[i*3+1]*2+1];
-			x2 = wXls[tris[i*3+2]*2+0]; y2 = wXls[tris[i*3+2]*2+1];
+			vertices[0] = ReadInt(tris, i*3+0);
+			vertices[1] = ReadInt(tris, i*3+1);
+			vertices[2] = ReadInt(tris, i*3+2);
+			x0 = ReadInt(wXls, vertices[0]*2+0); 
+			y0 = ReadInt(wXls, vertices[0]*2+1);
+			x1 = ReadInt(wXls, vertices[1]*2+0); 
+			y1 = ReadInt(wXls, vertices[1]*2+1);
+			x2 = ReadInt(wXls, vertices[2]*2+0); 
+			y2 = ReadInt(wXls, vertices[2]*2+1);
 			DrawLine(x0, y0, x1, y1);
 			DrawLine(x1, y1, x2, y2);
 			DrawLine(x2, y2, x0, y0);

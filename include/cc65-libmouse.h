@@ -2,6 +2,7 @@
 /*                                Mouse Library                              */
 /*****************************************************************************/
 
+#include <stdio.h>
 #include <mouse.h>
 
 struct mouse_info info;
@@ -43,8 +44,9 @@ static void __fastcall__ CheckError (const char* S, unsigned char Error)
     }
 }
 
-static void StartMouse ()
+static void InitMouse ()
 {
+	printf ("Loading Mouse Driver...\n");
 #if DYN_DRV
     /* Load and install the driver. */
     CheckError ("mouse_load_driver", mouse_load_driver (&mouse_def_callbacks, mouse_stddrv));
@@ -58,14 +60,12 @@ static void StartMouse ()
 #  endif
                                ));
 #endif
-
     /* Get the initial bounding box. */
     mouse_getbox (&full_box);
     screensize (&width, &height);
-	mouse_show ();
 }
 	
-	
+
 	
 /*			
 	//Save Screen
