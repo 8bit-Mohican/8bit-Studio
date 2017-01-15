@@ -53,26 +53,26 @@ int main (void)
 		dim[i] = (fix8*) malloc (3*sizeof(fix8));
 	}
 	
-	// Create Box
-	pos[0][0] = Int2Fix8(-20); pos[0][1] = Int2Fix8(0);  pos[0][2] = Int2Fix8(0);	
-	rot[0][0] = Int2Fix8(0);   rot[0][1] = Int2Fix8(0);  rot[0][2] = Int2Fix8(0);	
-	dim[0][0] = Int2Fix8(10);  dim[0][1] = Int2Fix8(10); dim[0][2] = Int2Fix8(10);
-	names[0] = CreateBox(&nVerts[0], &nTris[0], &verts[0], &norms[0], &tris[0], &pxls[0]);
-	
 	// Read STL Mesh
-	pos[1][0] = Int2Fix8(0); pos[1][1] = Int2Fix8(0); pos[1][2] = Int2Fix8(0);	
-	rot[1][0] = Int2Fix8(0); rot[1][1] = Int2Fix8(0); rot[1][2] = Int2Fix8(0);	
-	dim[1][0] = Int2Fix8(1); dim[1][1] = Int2Fix8(1); dim[1][2] = Int2Fix8(1);
-	names[1] = ReadSTL("logo.stl", &nVerts[1], &nTris[1], &verts[1], &norms[1], &tris[1], &pxls[1]);
+	pos[0][0] = Int2Fix8(0); pos[0][1] = Int2Fix8(0); pos[0][2] = Int2Fix8(0);	
+	rot[0][0] = Int2Fix8(0); rot[0][1] = Int2Fix8(0); rot[0][2] = Int2Fix8(0);	
+	dim[0][0] = Int2Fix8(1); dim[0][1] = Int2Fix8(1); dim[0][2] = Int2Fix8(1);
+	names[0] = ReadSTL("logo.stl", &nVerts[0], &nTris[0], &verts[0], &norms[0], &tris[0], &pxls[0]);
 
-	// Create Box
-	pos[2][0] = Int2Fix8(20); pos[2][1] = Int2Fix8(0);  pos[2][2] = Int2Fix8(0);	
-	rot[2][0] = Int2Fix8(0);  rot[2][1] = Int2Fix8(0);  rot[2][2] = Int2Fix8(0);	
-	dim[2][0] = Int2Fix8(10); dim[2][1] = Int2Fix8(10); dim[2][2] = Int2Fix8(10);
-	names[2] = CreateBox(&nVerts[2], &nTris[2], &verts[2], &norms[2], &tris[2], &pxls[2]);
+	// Create Cylinder
+	meshNum = 4;
+	for (i = 1; i < meshNum; ++i) {
+		rot[i][0] = Int2Fix8(0);   rot[i][1] = Int2Fix8(0);  rot[i][2] = Int2Fix8(0);	
+		dim[i][0] = Int2Fix8(10);  dim[i][1] = Int2Fix8(10); dim[i][2] = Int2Fix8(10);		
+	}
+	pos[1][0] = Int2Fix8(-20); pos[1][1] = Int2Fix8(0);   pos[1][2] = Int2Fix8(0);	
+	pos[2][0] = Int2Fix8(0);   pos[2][1] = Int2Fix8(-20); pos[2][2] = Int2Fix8(0);	
+	pos[3][0] = Int2Fix8(20);  pos[3][1] = Int2Fix8(0);   pos[3][2] = Int2Fix8(0);	
+	names[1] = CreateSphere(&nVerts[1], &nTris[1], &verts[1], &norms[1], &tris[1], &pxls[1]);
+	names[2] = CreateCylinder(6, &nVerts[2], &nTris[2], &verts[2], &norms[2], &tris[2], &pxls[2]);
+	names[3] = CreateBox(&nVerts[3], &nTris[3], &verts[3], &norms[3], &tris[3], &pxls[3]);	
 
 	// Initialize Screen
-	meshNum = 3;
 	StartTGI();
 	DrawGUI(meshSel, names, pos[meshSel], rot[meshSel], dim[meshSel]);
 

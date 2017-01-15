@@ -15,7 +15,7 @@ fix8 canvasH = 2*256;
 fix8 worldToCamera[4][4] = { { 256,     0,     0,     0},
 							 {   0,   256,     0,     0},
 							 {   0,     0,   256,     0},
-							 {   0,     0,  6400,   256} };						 
+							 {   0,     0, 10240,   256} };						 
 
 fix8 camVec[3] = {0,0,256};
 
@@ -89,7 +89,7 @@ static void RenderMesh(int nTris, int **tris, fix8 **norms, int **pxls)
 		normal[0] = ReadFix8(norms, i*3+0);
 		normal[1] = ReadFix8(norms, i*3+1);
 		normal[2] = ReadFix8(norms, i*3+2);
-		if (VectorVectorDot(normal,camVec) > 0) {
+		if (VectorVectorDot(normal,camVec) >= 0) {
 			visible[i] = true;
 		} else {
 			visible[i] = false;			
