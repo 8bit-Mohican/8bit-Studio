@@ -57,18 +57,80 @@ static void ComputePixel(fix8 wldPt[3])
 
 fix8 wldPt[3];
 
-static void Rasterize(int nVerts, fix8 **verts, int **pxls)
+static void Rasterize(fix8 pos[3], fix8 rot[3], fix8 dim[3], int nVerts, fix8 **verts, int **pxls)
 {	
-	// Project points to screen
-	int i;
+	// Rasterize mesh
+	int i,k;
 	for (i = 0; i < nVerts; ++i) {
-		wldPt[0] = ReadFix8(verts, i*3+0); 
-		wldPt[1] = ReadFix8(verts, i*3+1); 
-		wldPt[2] = ReadFix8(verts, i*3+2);
+		for (k = 0; k < 3; ++k) {
+			// Read point from buffer, and transform
+			wldPt[k] = ReadFix8(verts, i*3+k); 
+			wldPt[k] = (wldPt[k]*dim[k])/256;
+			wldPt[k] += pos[k];
+		}
+
+		// Project point to screen
 		ComputePixel(wldPt);
 		(*pxls)[i*2+0] = scrPt[0]; 
 		(*pxls)[i*2+1] = scrPt[1]; 
 	}
+}
+
+static void RenderMesh(int nTris, int **tris, fix8 **norms, int **pxls) 
+{
+	fix8 normal[3];
+	int vertices[3];	
+	int i,x0,y0,x1,y1,x2,y2;
+	bool *visible = (bool*) malloc (nTris/8+1);
+
+	// Check normals against camera in first loop
+	// (this allows sequential reading of data in REU)
+	for (i = 0; i < nTris; ++i) {
+		normal[0] = ReadFix8(norms, i*3+0);
+		normal[1] = ReadFix8(norms, i*3+1);
+		normal[2] = ReadFix8(norms, i*3+2);
+		if (VectorVectorDot(normal,camVec) > 0) {
+			visible[i] = true;
+		} else {
+			visible[i] = false;			
+		}
+	}
+		
+	// Draw visible triangles in second loop
+	// (this allows sequential reading of data in REU)
+	for (i = 0; i < nTris; ++i) {
+		if (visible[i]) {
+			vertices[0] = ReadInt(tris, i*3+0);
+			vertices[1] = ReadInt(tris, i*3+1);
+			vertices[2] = ReadInt(tris, i*3+2);
+			
+/*			// Trick for faster rendering? 
+			// Only Rasterize vertices which are drawn
+			for (k = 0; k < 3; ++k) {
+				if ((*pxls)[vertices[k]*2+0] == -1) {
+					wldPt[0] = ReadFix8(verts, vertices[k]*3+0); 
+					wldPt[1] = ReadFix8(verts, vertices[k]*3+1); 
+					wldPt[2] = ReadFix8(verts, vertices[k]*3+2);
+					ComputePixel(wldPt);
+					(*pxls)[vertices[k]*2+0] = scrPt[0]; 
+					(*pxls)[vertices[k]*2+1] = scrPt[1]; 
+				}
+			}
+*/			
+			x0 = (*pxls)[vertices[0]*2+0]; 
+			y0 = (*pxls)[vertices[0]*2+1];
+			x1 = (*pxls)[vertices[1]*2+0]; 
+			y1 = (*pxls)[vertices[1]*2+1];
+			x2 = (*pxls)[vertices[2]*2+0]; 
+			y2 = (*pxls)[vertices[2]*2+1];
+			DrawLine(x0, y0, x1, y1);
+			DrawLine(x1, y1, x2, y2);
+			DrawLine(x2, y2, x0, y0);
+		}
+	}
+	
+	// Free memory
+	free(visible);
 }
 
 fix8 wX[3] = {256*30, 0, 0};
@@ -106,57 +168,14 @@ static void RenderAxes()
 	if (nX > 0) {
 		DrawLine(14-(15*vX[0])/nX, 183-(15*vX[1])/nX, 14+(7*vX[0])/nX, 183+(7*vX[1])/nX);
 		tgi_outtextxy(14+(11*vX[0])/nX-2, 183+(11*vX[1])/nX+2, "x");
-	}
+	} else { tgi_outtextxy(14, 183, "x"); }
 	if (nY > 0) {
 		DrawLine(14-(15*vY[0])/nY, 183-(15*vY[1])/nY, 14+(7*vY[0])/nY, 183+(7*vY[1])/nY);
 		tgi_outtextxy(14+(11*vY[0])/nY-2, 183+(11*vY[1])/nY+2, "y");
-	}
+	} else { tgi_outtextxy(14, 183, "y"); }
 	
 	// Restore render
 	screenW = 220; screenH = 200;
-}
-
-static void RenderMesh(int nTris, int **tris, fix8 **norms, int **pxls) 
-{
-	fix8 normal[3];
-	int vertices[3];	
-	unsigned int i,x0,y0,x1,y1,x2,y2;
-	bool *visible = (bool*) malloc (nTris/8+1);
-
-	// Check normals against camera in first loop
-	// (this allows sequential reading of data in REU)
-	for (i = 0; i < nTris; ++i) {
-		normal[0] = ReadFix8(norms, i*3+0);
-		normal[1] = ReadFix8(norms, i*3+1);
-		normal[2] = ReadFix8(norms, i*3+2);
-		if (VectorVectorDot(normal,camVec) > 0) {
-			visible[i] = true;
-		} else {
-			visible[i] = false;			
-		}
-	}
-		
-	// Draw visible triangles in second loop
-	// (this allows sequential reading of data in REU)
-	for (i = 0; i < nTris; ++i) {
-		if (visible[i]) {
-			vertices[0] = ReadInt(tris, i*3+0);
-			vertices[1] = ReadInt(tris, i*3+1);
-			vertices[2] = ReadInt(tris, i*3+2);
-			x0 = (*pxls)[vertices[0]*2+0]; 
-			y0 = (*pxls)[vertices[0]*2+1];
-			x1 = (*pxls)[vertices[1]*2+0]; 
-			y1 = (*pxls)[vertices[1]*2+1];
-			x2 = (*pxls)[vertices[2]*2+0]; 
-			y2 = (*pxls)[vertices[2]*2+1];
-			DrawLine(x0, y0, x1, y1);
-			DrawLine(x1, y1, x2, y2);
-			DrawLine(x2, y2, x0, y0);
-		}
-	}
-	
-	// Free memory
-	free(visible);
 }
 
 static void ResetCanvas()

@@ -17,6 +17,12 @@
 /*                                 Main Code                                 */
 /*****************************************************************************/
 
+// Mesh Counters
+int meshSel = 0;
+int meshNum = 0;
+int guiTrigger = 0;
+char lastChar;
+
 int main (void) 
 {
 	unsigned int i;
@@ -29,9 +35,6 @@ int main (void)
 	int nVerts[MAXMESH], nTris[MAXMESH];
 	fix8 *verts[MAXMESH], *norms[MAXMESH];
 	int *tris[MAXMESH], *pxls[MAXMESH];
-	
-	// GUI Data
-	int guiSel = 0;
 	
 	// Reset Screen
 	clrscr (); gotoxy (0, 0);
@@ -51,64 +54,102 @@ int main (void)
 	}
 	
 	// Create Box
-	pos[0][0] = Int2Fix8(-20); pos[0][1] = Int2Fix8(0); pos[0][2] = Int2Fix8(0);	
-	rot[0][0] = Int2Fix8(0); rot[0][1] = Int2Fix8(0); rot[0][2] = Int2Fix8(0);	
-	dim[0][0] = Int2Fix8(10); dim[0][1] = Int2Fix8(10); dim[0][2] = Int2Fix8(10);
-	names[0] = CreateBox(dim[0], pos[0], &nVerts[0], &nTris[0], &verts[0], &norms[0], &tris[0], &pxls[0]);
+	pos[0][0] = Int2Fix8(-20); pos[0][1] = Int2Fix8(0);  pos[0][2] = Int2Fix8(0);	
+	rot[0][0] = Int2Fix8(0);   rot[0][1] = Int2Fix8(0);  rot[0][2] = Int2Fix8(0);	
+	dim[0][0] = Int2Fix8(10);  dim[0][1] = Int2Fix8(10); dim[0][2] = Int2Fix8(10);
+	names[0] = CreateBox(&nVerts[0], &nTris[0], &verts[0], &norms[0], &tris[0], &pxls[0]);
 	
 	// Read STL Mesh
+	pos[1][0] = Int2Fix8(0); pos[1][1] = Int2Fix8(0); pos[1][2] = Int2Fix8(0);	
+	rot[1][0] = Int2Fix8(0); rot[1][1] = Int2Fix8(0); rot[1][2] = Int2Fix8(0);	
+	dim[1][0] = Int2Fix8(1); dim[1][1] = Int2Fix8(1); dim[1][2] = Int2Fix8(1);
 	names[1] = ReadSTL("logo.stl", &nVerts[1], &nTris[1], &verts[1], &norms[1], &tris[1], &pxls[1]);
-/*	gotoxy (0, 5); cprintf ("Triangle:%d,%d,%d", (*tris)[1][0], (*tris)[1][1], (*tris)[1][2]);
-	gotoxy (0, 9); cprintf ("Normal:%ld,%ld,%ld", (*norms)[1][0], (*norms)[1][1], (*norms)[1][2]);
-*/	
+
+	// Create Box
+	pos[2][0] = Int2Fix8(20); pos[2][1] = Int2Fix8(0);  pos[2][2] = Int2Fix8(0);	
+	rot[2][0] = Int2Fix8(0);  rot[2][1] = Int2Fix8(0);  rot[2][2] = Int2Fix8(0);	
+	dim[2][0] = Int2Fix8(10); dim[2][1] = Int2Fix8(10); dim[2][2] = Int2Fix8(10);
+	names[2] = CreateBox(&nVerts[2], &nTris[2], &verts[2], &norms[2], &tris[2], &pxls[2]);
+
 	// Initialize Screen
+	meshNum = 3;
 	StartTGI();
-	DrawGUI(guiSel, names, pos[guiSel], rot[guiSel], dim[guiSel]);
+	DrawGUI(meshSel, names, pos[meshSel], rot[meshSel], dim[meshSel]);
 
 	// Show Mouse
 	mouse_show ();
-	mouse_info(&info);	
-	mouseX = info.pos.x;
-	mouseY = info.pos.y;	
-		
-    // Enable Mouse Interface
-	while (!kbhit()) {			
-		//Get mouse Information
+	mouseX = -1;
+	
+    // Main loop of Application
+	while (lastChar != 'q') {
+		// Process keyboard info
+		if (kbhit()) {
+			lastChar = cgetc();
+		}
+	
+		// Process mouse info
         mouse_info (&info);	
-		if (info.buttons & MOUSE_BTN_LEFT) {	
-			// Rotating the axes
-			if (abs(mouseX - info.pos.x) > 0 || abs(mouseY - info.pos.y) > 0) {
-				// Compute delta
-				xCam = (xCam + (mouseY - info.pos.y))%360;
-				zCam = (zCam + (mouseX - info.pos.x))%360;
-				mouseX = info.pos.x;
-				mouseY = info.pos.y;
+		if (info.buttons & MOUSE_BTN_LEFT) {
+			// Located in viewport part?
+			if (info.pos.x < 220) {
+				// Rotate the axes
+				if (mouseX == -1) {
+					mouseX = info.pos.x;
+					mouseY = info.pos.y;				
+				} else if (abs(mouseX - info.pos.x) > 0 || abs(mouseY - info.pos.y) > 0) {
+					// Compute delta
+					xCam = (xCam + (mouseY - info.pos.y))%360;
+					zCam = (zCam + (mouseX - info.pos.x))%360;
+					mouse_move(mouseX, mouseY);
 
-				// Refresh axes
-				UpdateCamera();
-				RenderAxes();	
-				doRender = true;
-			}			
+					// Refresh axes
+					UpdateCamera();
+					RenderAxes();	
+				}
+			// Located in GUI part?
+			} else {
+				guiTrigger = 1;
+			}
 		} else {
-			// Redraw is the axes were rotated
-			if (doRender) {
-				// Reset state
-				time = clock();
-				doRender = false;
-				UpdateCamera();
-				Rasterize(nVerts[0], &verts[0], &pxls[0]);
-				Rasterize(nVerts[1], &verts[1], &pxls[1]);
+			// Reset mouse
+			if (mouseX != -1) {
+				mouseX = -1;
+				doRender = true;
+			}
+			
+			// Check GUI actions?
+			if (guiTrigger) {
+				guiTrigger = 0;
 
-				// Render scene
-				ResetCanvas();
-				RenderMesh(nTris[0], &tris[0], &norms[0], &pxls[0]);
-				RenderMesh(nTris[1], &tris[1], &norms[1], &pxls[1]);
-				RenderAxes();							
-				time = clock() - time;			
+				// Change mesh selection?
+				if (info.pos.x > listX && info.pos.x < listX+listW && 
+				    info.pos.y > listY && info.pos.y < listY+listH ) {
+					meshSel = (info.pos.y - listY) / 12;
+					DrawList(listX, listY, listW, listH, meshSel, names);
+					DrawProps(pos[meshSel], rot[meshSel], dim[meshSel]);
+				}				
 			}
 		}
+			
+		// Redraw if necessary
+		if (doRender) {
+			// Reset state
+			doRender = false;
+			time = clock();
+			UpdateCamera();
+			for (i = 0; i < meshNum; ++i) {
+				Rasterize(pos[i], rot[i], dim[i], nVerts[i], &verts[i], &pxls[i]);
+			}
+
+			// Render scene
+			ResetCanvas();
+			for (i = 0; i < meshNum; ++i) {
+				RenderMesh(nTris[i], &tris[i], &norms[i], &pxls[i]);
+			}
+			RenderAxes();							
+			time = clock() - time;			
+		}
 	}
-	cgetc();
 	StopTGI();
 	
 	// Show stats

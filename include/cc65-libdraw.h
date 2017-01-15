@@ -117,16 +117,23 @@ static void DrawButton (int x, int y, int w, int h, char *text)
 	tgi_outtextxy(x+5, y+h-3, text);
 }
 
-static void DrawList (int x, int y, int w, int h,  int guiSel, const char *names[]) 
+static void DrawList (int x, int y, int w, int h,  int sel, const char *names[]) 
 {
 	int i = 0;
+	
+	// Reset background
+	tgi_setcolor (COLOR_BACK);
+	tgi_bar(x, y, x+w, y+h);
+	tgi_setcolor (COLOR_FORE);
+	
+	// Draw list
 	tgi_line(x, y, x+w, y);	
 	tgi_line(x, y+h, x+w, y+h);	
 	tgi_line(x, y, x, y+h);	
 	tgi_line(x+w, y, x+w, y+h);	
 	tgi_line(x+w-10, y, x+w-10, y+h);	
 	while (names[i] != NULL && i<9) {
-		if (i==guiSel) {
+		if (i==sel) {
 			tgi_setcolor (COLOR_FORE);
 			tgi_bar(x+8, y+(i+1)*12-10, x+w-18, y+(i+1)*12-2);
 			tgi_setcolor (COLOR_BACK);
@@ -139,19 +146,16 @@ static void DrawList (int x, int y, int w, int h,  int guiSel, const char *names
 	}
 }
 
-static void DrawGUI (int guiSel, const char *names[], fix8 pos[3], fix8 rot[3], fix8 dim[3]) 
+static void DrawProps (fix8 pos[3], fix8 rot[3], fix8 dim[3])
 {
 	char dump[8];
-	
-	// Separators
+		
+	// Reset background
+	tgi_setcolor (COLOR_BACK);
+	tgi_bar(225, 70, 319, 110);
 	tgi_setcolor (COLOR_FORE);
-	tgi_line(220, 0, 220, 200);
-	tgi_line(220, 120, 319, 120);
-	
-	// Top Section
-	tgi_outtextxy(240, 10, "C64 Studio");	
-	DrawList(230, 18, 80, 48, guiSel, names);
 
+	// Draw props
 	tgi_outtextxy(225, 80, "Pos:");
 	snprintf(dump, 8, "%ld", pos[0]/256);
 	tgi_outtextxy(250, 80, dump);
@@ -175,6 +179,24 @@ static void DrawGUI (int guiSel, const char *names[], fix8 pos[3], fix8 rot[3], 
 	tgi_outtextxy(275, 110, dump);
 	snprintf(dump, 8, "%ld", dim[2]/256);
 	tgi_outtextxy(300, 110, dump);
+}
+
+int listX = 230;
+int listY = 18;
+int listW = 80;
+int listH = 48;
+
+static void DrawGUI (int sel, const char *names[], fix8 pos[3], fix8 rot[3], fix8 dim[3]) 
+{	
+	// Separators
+	tgi_setcolor (COLOR_FORE);
+	tgi_line(220, 0, 220, 200);
+	tgi_line(220, 120, 319, 120);
+	
+	// Top Section
+	tgi_outtextxy(240, 10, "C64 Studio");	
+	DrawList(listX, listY, listW, listH, sel, names);
+	DrawProps(pos, rot, dim);
 	
 	// Bottom Section
 	DrawButton(230, 125, 80, 12, "Add Primitive");
