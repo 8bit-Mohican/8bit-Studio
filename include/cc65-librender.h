@@ -74,44 +74,13 @@ static void Rasterize(int nVerts, fix8 **verts, int **pxls)
 	}
 }
 
-static void Transform(fix8 pos[3], fix8 rot[3], fix8 dim[3], int nVerts, fix8 **verts)
-{
-	fix8 cosA,sinA,cosB,sinB,cosC,sinC;
-	fix8 x,y,z;
-	int i;
-	
-	// Compute cos/sin
-	cosA = cc65_cos(rot[0]/256); sinA = cc65_sin(rot[0]/256);
-	cosB = cc65_cos(rot[1]/256); sinB = cc65_sin(rot[1]/256);
-	cosC = cc65_cos(rot[2]/256); sinC = cc65_sin(rot[2]/256);
-
-	// Transform all vertices		
-	for (i = 0; i < nVerts; ++i) {
-		// Read point from buffer and rescale
-		x = (ReadFix8(verts,i*6+0) * dim[0])/256; 
-		y = (ReadFix8(verts,i*6+1) * dim[1])/256; 
-		z = (ReadFix8(verts,i*6+2) * dim[2])/256; 
-
-		// Write the rotated/translated point
-		WriteFix8(verts,i*6+3, (x*cosC*cosB - y*sinC*cosA + y*(cosC*sinB*sinA/256) + z*sinC*sinA + z*(cosC*sinB*cosA/256)) / 65536 + pos[0]);
-		WriteFix8(verts,i*6+4, (x*sinC*cosB + y*cosC*cosA + y*(sinC*sinB*sinA/256) - z*cosC*sinA + z*(sinC*sinB*cosA/256)) / 65536 + pos[1]);
-		WriteFix8(verts,i*6+5, (-x*sinB*256 + y*cosB*sinA + z*cosB*cosA) / 65536 + pos[2]);
-	}	
-}
-
-static void RenderMesh(fix8 pos[3], fix8 rot[3], fix8 dim[3], int nTris, int nVerts, int **tris, fix8 **norms, fix8 **verts, int **pxls, char *renderMask) 
+static void RenderMesh(int nTris, int nVerts, int **tris, fix8 **norms, fix8 **verts, int **pxls, char *renderMask) 
 {
 	fix8 normal[3];
 	int vertices[3];	
 	int i,x0,y0,x1,y1,x2,y2;
 	bool *visible;
 	
-	// Do Transform?
-	if ((*renderMask) & MASK_TRANSFORM) {
-		Transform(pos, rot, dim, nVerts, verts);
-		(*renderMask) &= ~MASK_TRANSFORM;
-	}	
-
 	// Do Rasterize?
 	if ((*renderMask) & MASK_RASTERIZE) {
 		Rasterize(nVerts, verts, pxls);

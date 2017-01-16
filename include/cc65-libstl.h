@@ -40,9 +40,9 @@ const char* ReadSTL(char *filename, int *nVerts, int *nTris, fix8 **verts, fix8 
 	printf ("Triangles: %d\n", GET_WORD(buffer));
 	
 	// Allocate memory for triangles/normals/vertices
-	AllocateInt(tris, (*nTris)*3);
-	AllocateFix8(norms, (*nTris)*3);
-	AllocateFix8(verts, (*nVerts)*6);
+	MallocInt(tris, (*nTris)*3);
+	MallocFix8(norms, (*nTris)*3);
+	MallocFix8(verts, (*nVerts)*6);
 	
 	// Read data from file
 	for (i = 0; i < (*nTris); ++i) {
@@ -93,7 +93,7 @@ const char* ReadSTL(char *filename, int *nVerts, int *nTris, fix8 **verts, fix8 
 	
 	// Shrink vertices memory
 	(*nVerts) = v/6;
-	//ReAllocateFix8(verts, (*nVerts)*3*2);
+	ReallocFix8(verts, (*nVerts)*6);
 	printf ("Vertices: %d\n", (*nVerts));	
 	
 	// Allocate pixel data in main memory (for fast drawing)

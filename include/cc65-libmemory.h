@@ -10,9 +10,8 @@
 
 #include "cc65-libfix8.h"
 
-#define MASK_TRANSFORM   1  // 2^0, bit 0
-#define MASK_RASTERIZE   2  // 2^1, bit 1
-#define MASK_DRAW        4  // 2^2, bit 2
+#define MASK_RASTERIZE   1  // 2^0, bit 0
+#define MASK_DRAW        2  // 2^1, bit 1
 
 static int useREU = 0;
 
@@ -46,42 +45,62 @@ static void SwitchPage(int page)
 	pageSelec = page;
 }
 
-int dump;
-
-static void AllocateFix8(fix8 **pointer, int num)
+static void MallocFix8(fix8 **pointer, int num)
 {
+	int dump;
 	if (useREU) {
 		// Allocate pages in Extended Memory
-		dump = pageAlloc;
 		(*pointer) = (fix8*) malloc (sizeof(fix8));	
 		if (pageAlloc + (4*num/256)+1 < pageMaxim) {
-			(*pointer)[0] = pageAlloc;
+			dump = pageAlloc;
+			(*pointer)[0] = dump;
 			pageAlloc += (4*num/256)+1;
+			printf ("Allocated %d pages of Fix8\n", pageAlloc-dump);
 		} else {
-			printf ("No more memory available!\n");
 			(*pointer)[0] = -1;
+			printf ("No more memory available!\n");
 		}
-		printf ("Allocated %d pages of Fix8\n", pageAlloc-dump);
 	} else {
+		// Allocate array in Main Memory
 		(*pointer) = (fix8*) malloc (num*sizeof(fix8));
 	}
 }
 
-static void AllocateInt(int **pointer, int num)
+static void ReallocFix8(fix8 **pointer, int num)
 {
-	if (useREU) {	
-		// Allocate pages in Extended Memory
-		dump = pageAlloc;
-		(*pointer) = (int*) malloc (sizeof(int));	
-		if (pageAlloc + (2*num/256)+1 < pageMaxim) {
-			(*pointer)[0] = pageAlloc;
-			pageAlloc += (2*num/256)+1;
+	int dump;
+	if (useREU) {
+		// Re-allocate pages in Extended Memory
+		if ((*pointer)[0] + (4*num/256)+1 < pageMaxim) {
+			dump = (*pointer)[0];
+			pageAlloc = dump+(4*num/256)+1;
+			printf ("Re-allocated %d pages of Fix8\n", pageAlloc-dump);
 		} else {
 			printf ("No more memory available!\n");
-			(*pointer)[0] = -1;
 		}
-		printf ("Allocated %d pages of Int\n", pageAlloc-dump);
 	} else {
+		// Re-allocate array in Main Memory
+		(*pointer) = (fix8*) realloc ((*pointer), num*sizeof(fix8));		
+	}
+}
+
+static void MallocInt(int **pointer, int num)
+{
+	int dump;
+	if (useREU) {	
+		// Allocate pages in Extended Memory
+		(*pointer) = (int*) malloc (sizeof(int));	
+		if (pageAlloc + (2*num/256)+1 < pageMaxim) {
+			dump = pageAlloc;
+			(*pointer)[0] = dump;
+			pageAlloc += (2*num/256)+1;
+			printf ("Allocated %d pages of Int\n", pageAlloc-dump);
+		} else {
+			(*pointer)[0] = -1;
+			printf ("No more memory available!\n");
+		}
+	} else {
+		// Allocate array in Main Memory		
 		(*pointer) = (int*) malloc (num*sizeof(int));
 	}
 }
