@@ -2,6 +2,7 @@
 /*                               Drawing Stuff                               */
 /*****************************************************************************/
 
+#include <stdbool.h>
 #include <tgi.h>
 
 #ifndef DYN_DRV
@@ -12,15 +13,31 @@
 #define COLOR_BORDER    15					// Light-Grey
 #define COLOR_FORE      TGI_COLOR_WHITE
 
-int screenW = 220;
-int screenH = 200;
+static int screenW = 220;
+static int screenH = 200;
 
 static unsigned MaxX;
 static unsigned MaxY;
 static unsigned AspectRatio;
 
-static const tgi_vectorfont* font = 0;
+const tgi_vectorfont* font = 0;
 
+static int selMesh = 0;
+const int listX = 230;
+const int listY = 18;
+const int listW = 80;
+const int listH = 48;
+
+const int propsX = 250;
+const int propsY = 70;
+const int propsW = 70;
+const int propsH = 40;
+
+static int selTab = 0;
+const int tabsX = 220;
+const int tabsY = 120;
+const int tabsW = 100;
+const int tabsH = 12;
 
 static void CheckTGIError (const char* S) 
 {
@@ -108,16 +125,22 @@ static void DrawLine(int x0, int y0, int x1, int y1)
 	}	
 }
 
-static void DrawButton (int x, int y, int w, int h, char *text) 
+static void DrawButton (int x, int y, int w, int h, char *text, bool highlight) 
 {
+	tgi_setcolor (COLOR_FORE);
+	if (highlight) {
+		tgi_bar(x+1, y+1, x+w-1, y+h-1);
+		tgi_setcolor (COLOR_BACK);		
+	}
+	tgi_outtextxy(x+5, y+h-3, text);
+	tgi_setcolor (COLOR_FORE);
 	tgi_line(x, y, x+w, y);	
 	tgi_line(x, y+h, x+w, y+h);	
 	tgi_line(x, y, x, y+h);	
-	tgi_line(x+w, y, x+w, y+h);	
-	tgi_outtextxy(x+5, y+h-3, text);
+	tgi_line(x+w, y, x+w, y+h);
 }
 
-static void DrawList (int x, int y, int w, int h,  int sel, const char *names[]) 
+static void DrawList (int x, int y, int w, int h, const char *names[], int sel) 
 {
 	int i = 0;
 	
@@ -181,12 +204,41 @@ static void DrawProps (fix8 pos[3], fix8 rot[3], fix8 dim[3])
 	tgi_outtextxy(300, 110, dump);
 }
 
-int listX = 230;
-int listY = 18;
-int listW = 80;
-int listH = 48;
+static void DrawControls()
+{
+	// Reset background
+	tgi_setcolor (COLOR_BACK);
+	tgi_bar(221, 121, 319, 199);
+	tgi_setcolor (COLOR_FORE);
+	
+	// Draw tabs
+	DrawButton(220, 120, 33, 12, "Prim", selTab == 0);
+	DrawButton(253, 120, 33, 12, "Bool", selTab == 1);
+	DrawButton(286, 120, 33, 12, "Scene", selTab == 2);
+		
+	// Draw buttons
+	if (selTab == 0) {
+		DrawButton(230, 140-2, 80, 12, "Add Box", false);
+		DrawButton(230, 155-2, 80, 12, "Add Cone", false);
+		DrawButton(230, 170-2, 80, 12, "Add Cylinder", false);
+		DrawButton(230, 185-2, 80, 12, "Add Sphere", false);
+	}
+	
+	if (selTab == 1) {
+		DrawButton(230, 140-2, 80, 12, "Difference", false);
+		DrawButton(230, 155-2, 80, 12, "Intersect", false);
+		DrawButton(230, 170-2, 80, 12, "Union", false);
+	}	
+	
+	if (selTab == 2) {
+		DrawButton(230, 140-2, 80, 12, "Load Disk", false);
+		DrawButton(230, 155-2, 80, 12, "Save Disk", false);
+		DrawButton(230, 170-2, 80, 12, "Download", false);
+		DrawButton(230, 185-2, 80, 12, "Upload", false);
+	}		
+}
 
-static void DrawGUI (int sel, const char *names[], fix8 pos[3], fix8 rot[3], fix8 dim[3]) 
+static void DrawGUI (const char *names[], fix8 pos[3], fix8 rot[3], fix8 dim[3]) 
 {	
 	// Separators
 	tgi_setcolor (COLOR_FORE);
@@ -195,14 +247,11 @@ static void DrawGUI (int sel, const char *names[], fix8 pos[3], fix8 rot[3], fix
 	
 	// Top Section
 	tgi_outtextxy(240, 10, "C64 Studio");	
-	DrawList(listX, listY, listW, listH, sel, names);
+	DrawList(listX, listY, listW, listH, names, selMesh);
 	DrawProps(pos, rot, dim);
 	
 	// Bottom Section
-	DrawButton(230, 125, 80, 12, "Add Primitive");
-	DrawButton(230, 140, 80, 12, "Perform Bool");
-	DrawButton(230, 160, 80, 12, "Load Scene");
-	DrawButton(230, 175, 80, 12, "Save Scene");
+	DrawControls();
 }
 
 static void ShowStats (clock_t t, unsigned long f) 

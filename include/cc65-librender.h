@@ -57,16 +57,14 @@ static void ComputePixel(fix8 wldPt[3])
 
 fix8 wldPt[3];
 
-static void Rasterize(fix8 pos[3], fix8 rot[3], fix8 dim[3], int nVerts, fix8 **verts, int **pxls)
+static void Rasterize(int nVerts, fix8 **verts, int **pxls)
 {	
 	// Rasterize mesh
 	int i,k;
 	for (i = 0; i < nVerts; ++i) {
+		// Read transformed point
 		for (k = 0; k < 3; ++k) {
-			// Read point from buffer, and transform
-			wldPt[k] = ReadFix8(verts, i*3+k); 
-			wldPt[k] = (wldPt[k]*dim[k])/256;
-			wldPt[k] += pos[k];
+			wldPt[k] = ReadFix8(verts,i*6+k+3); 
 		}
 
 		// Project point to screen
@@ -76,61 +74,94 @@ static void Rasterize(fix8 pos[3], fix8 rot[3], fix8 dim[3], int nVerts, fix8 **
 	}
 }
 
-static void RenderMesh(int nTris, int **tris, fix8 **norms, int **pxls) 
+static void Transform(fix8 pos[3], fix8 rot[3], fix8 dim[3], int nVerts, fix8 **verts)
+{
+	fix8 cosA,sinA,cosB,sinB,cosC,sinC;
+	fix8 x,y,z;
+	int i;
+	
+	// Compute cos/sin
+	cosA = cc65_cos(rot[0]/256); sinA = cc65_sin(rot[0]/256);
+	cosB = cc65_cos(rot[1]/256); sinB = cc65_sin(rot[1]/256);
+	cosC = cc65_cos(rot[2]/256); sinC = cc65_sin(rot[2]/256);
+
+	// Transform all vertices		
+	for (i = 0; i < nVerts; ++i) {
+		// Read point from buffer and rescale
+		x = (ReadFix8(verts,i*6+0) * dim[0])/256; 
+		y = (ReadFix8(verts,i*6+1) * dim[1])/256; 
+		z = (ReadFix8(verts,i*6+2) * dim[2])/256; 
+
+		// Write the rotated/translated point
+		WriteFix8(verts,i*6+3, (x*cosC*cosB - y*sinC*cosA + y*(cosC*sinB*sinA/256) + z*sinC*sinA + z*(cosC*sinB*cosA/256)) / 65536 + pos[0]);
+		WriteFix8(verts,i*6+4, (x*sinC*cosB + y*cosC*cosA + y*(sinC*sinB*sinA/256) - z*cosC*sinA + z*(sinC*sinB*cosA/256)) / 65536 + pos[1]);
+		WriteFix8(verts,i*6+5, (-x*sinB*256 + y*cosB*sinA + z*cosB*cosA) / 65536 + pos[2]);
+	}	
+}
+
+static void RenderMesh(fix8 pos[3], fix8 rot[3], fix8 dim[3], int nTris, int nVerts, int **tris, fix8 **norms, fix8 **verts, int **pxls, char *renderMask) 
 {
 	fix8 normal[3];
 	int vertices[3];	
 	int i,x0,y0,x1,y1,x2,y2;
-	bool *visible = (bool*) malloc (nTris/8+1);
-
-	// Check normals against camera in first loop
-	// (this allows sequential reading of data in REU)
-	for (i = 0; i < nTris; ++i) {
-		normal[0] = ReadFix8(norms, i*3+0);
-		normal[1] = ReadFix8(norms, i*3+1);
-		normal[2] = ReadFix8(norms, i*3+2);
-		if (VectorVectorDot(normal,camVec) >= 0) {
-			visible[i] = true;
-		} else {
-			visible[i] = false;			
-		}
-	}
-		
-	// Draw visible triangles in second loop
-	// (this allows sequential reading of data in REU)
-	for (i = 0; i < nTris; ++i) {
-		if (visible[i]) {
-			vertices[0] = ReadInt(tris, i*3+0);
-			vertices[1] = ReadInt(tris, i*3+1);
-			vertices[2] = ReadInt(tris, i*3+2);
-			
-/*			// Trick for faster rendering? 
-			// Only Rasterize vertices which are drawn
-			for (k = 0; k < 3; ++k) {
-				if ((*pxls)[vertices[k]*2+0] == -1) {
-					wldPt[0] = ReadFix8(verts, vertices[k]*3+0); 
-					wldPt[1] = ReadFix8(verts, vertices[k]*3+1); 
-					wldPt[2] = ReadFix8(verts, vertices[k]*3+2);
-					ComputePixel(wldPt);
-					(*pxls)[vertices[k]*2+0] = scrPt[0]; 
-					(*pxls)[vertices[k]*2+1] = scrPt[1]; 
-				}
-			}
-*/			
-			x0 = (*pxls)[vertices[0]*2+0]; 
-			y0 = (*pxls)[vertices[0]*2+1];
-			x1 = (*pxls)[vertices[1]*2+0]; 
-			y1 = (*pxls)[vertices[1]*2+1];
-			x2 = (*pxls)[vertices[2]*2+0]; 
-			y2 = (*pxls)[vertices[2]*2+1];
-			DrawLine(x0, y0, x1, y1);
-			DrawLine(x1, y1, x2, y2);
-			DrawLine(x2, y2, x0, y0);
-		}
-	}
+	bool *visible;
 	
-	// Free memory
-	free(visible);
+	// Do Transform?
+	if ((*renderMask) & MASK_TRANSFORM) {
+		Transform(pos, rot, dim, nVerts, verts);
+		(*renderMask) &= ~MASK_TRANSFORM;
+	}	
+
+	// Do Rasterize?
+	if ((*renderMask) & MASK_RASTERIZE) {
+		Rasterize(nVerts, verts, pxls);
+		(*renderMask) &= ~MASK_RASTERIZE;
+	}
+
+	// Do Draw?
+	if ((*renderMask) & MASK_DRAW) {
+		// Check normals against camera in first loop
+		// (this allows sequential reading of data in REU)
+		visible = (bool*) malloc (nTris/8+1);
+		for (i = 0; i < nTris; ++i) {
+			normal[0] = ReadFix8(norms, i*3+0);
+			normal[1] = ReadFix8(norms, i*3+1);
+			normal[2] = ReadFix8(norms, i*3+2);
+			if (VectorVectorDot(normal,camVec) >= 0) {
+				visible[i] = true;
+			} else {
+				visible[i] = false;			
+			}
+		}
+			
+		// Draw visible triangles in second loop
+		// (this allows sequential reading of data in REU)
+		for (i = 0; i < nTris; ++i) {
+			if (visible[i]) {
+				// Get vertices indices
+				vertices[0] = ReadInt(tris, i*3+0);
+				vertices[1] = ReadInt(tris, i*3+1);
+				vertices[2] = ReadInt(tris, i*3+2);		
+				
+				// Get pixel coordinates
+				x0 = (*pxls)[vertices[0]*2+0]; 
+				y0 = (*pxls)[vertices[0]*2+1];
+				x1 = (*pxls)[vertices[1]*2+0]; 
+				y1 = (*pxls)[vertices[1]*2+1];
+				x2 = (*pxls)[vertices[2]*2+0]; 
+				y2 = (*pxls)[vertices[2]*2+1];
+				
+				// Draw the triangle sides
+				DrawLine(x0, y0, x1, y1);
+				DrawLine(x1, y1, x2, y2);
+				DrawLine(x2, y2, x0, y0);
+			}
+		}
+		
+		// Free memory
+		(*renderMask) &= ~MASK_DRAW;
+		free(visible);
+	}
 }
 
 fix8 wX[3] = {256*30, 0, 0};
@@ -138,22 +169,19 @@ fix8 wY[3] = {0, 256*30, 0};
 
 static void RenderAxes() 
 {
-	int pX[2], pY[2];
 	int vX[2], vY[2];
 	int nX, nY;
 
-	// Shrink render
+	// Shrink render size
 	screenW = 30; screenH = 30;
 	
-	// Rasterize 
+	// Compute vectors
 	ComputePixel(wX);
-	pX[0] = scrPt[0]; pX[1] = scrPt[1];
+	vX[0] = scrPt[0]-15; vX[1] = scrPt[1]-15;
 	ComputePixel(wY);
-	pY[0] = scrPt[0]; pY[1] = scrPt[1];
+	vY[0] = scrPt[0]-15; vY[1] = scrPt[1]-15;
 
-	// Compute Vectors
-	vX[0] = pX[0]-15; vX[1] = pX[1]-15; 
-	vY[0] = pY[0]-15; vY[1] = pY[1]-15;
+	// Compute norm
 	nX = iSqrt(vX[0]*vX[0]+vX[1]*vX[1]);
 	nY = iSqrt(vY[0]*vY[0]+vY[1]*vY[1]);
 	
@@ -174,7 +202,7 @@ static void RenderAxes()
 		tgi_outtextxy(14+(11*vY[0])/nY-2, 183+(11*vY[1])/nY+2, "y");
 	} else { tgi_outtextxy(14, 183, "y"); }
 	
-	// Restore render
+	// Restore render size
 	screenW = 220; screenH = 200;
 }
 

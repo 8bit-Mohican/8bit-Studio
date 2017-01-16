@@ -10,6 +10,10 @@
 
 #include "cc65-libfix8.h"
 
+#define MASK_TRANSFORM   1  // 2^0, bit 0
+#define MASK_RASTERIZE   2  // 2^1, bit 1
+#define MASK_DRAW        4  // 2^2, bit 2
+
 static int useREU = 0;
 
 static int pageAlloc = 0; 

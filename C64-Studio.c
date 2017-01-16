@@ -18,23 +18,23 @@
 /*****************************************************************************/
 
 // Mesh Counters
-int meshSel = 0;
 int meshNum = 0;
 int guiTrigger = 0;
 char lastChar;
+
+// Mesh Data
+const char *names[MAXMESH];
+static char renderMask[MAXMESH];
+static fix8 *pos[MAXMESH], *rot[MAXMESH], *dim[MAXMESH];
+static int nVerts[MAXMESH], nTris[MAXMESH];
+static fix8 *verts[MAXMESH], *norms[MAXMESH];
+static int *tris[MAXMESH], *pxls[MAXMESH];
 
 int main (void) 
 {
 	unsigned int i;
 	bool doRender = true;
 	clock_t time;
-	
-	// Mesh Data
-	const char *names[MAXMESH];
-	fix8 *pos[MAXMESH], *rot[MAXMESH], *dim[MAXMESH];
-	int nVerts[MAXMESH], nTris[MAXMESH];
-	fix8 *verts[MAXMESH], *norms[MAXMESH];
-	int *tris[MAXMESH], *pxls[MAXMESH];
 	
 	// Reset Screen
 	clrscr (); gotoxy (0, 0);
@@ -51,32 +51,34 @@ int main (void)
 		pos[i] = (fix8*) malloc (3*sizeof(fix8));
 		rot[i] = (fix8*) malloc (3*sizeof(fix8));
 		dim[i] = (fix8*) malloc (3*sizeof(fix8));
+		renderMask[i] = MASK_TRANSFORM | MASK_RASTERIZE | MASK_DRAW;
 	}
-	
-	// Read STL Mesh
-	pos[0][0] = Int2Fix8(0); pos[0][1] = Int2Fix8(0); pos[0][2] = Int2Fix8(0);	
-	rot[0][0] = Int2Fix8(0); rot[0][1] = Int2Fix8(0); rot[0][2] = Int2Fix8(0);	
-	dim[0][0] = Int2Fix8(1); dim[0][1] = Int2Fix8(1); dim[0][2] = Int2Fix8(1);
-	names[0] = ReadSTL("logo.stl", &nVerts[0], &nTris[0], &verts[0], &norms[0], &tris[0], &pxls[0]);
 
-	// Create Cylinder
+	// Create primitives
 	meshNum = 4;
-	for (i = 1; i < meshNum; ++i) {
+	for (i = 0; i < meshNum; ++i) {
 		rot[i][0] = Int2Fix8(0);   rot[i][1] = Int2Fix8(0);  rot[i][2] = Int2Fix8(0);	
 		dim[i][0] = Int2Fix8(10);  dim[i][1] = Int2Fix8(10); dim[i][2] = Int2Fix8(10);		
 	}
-	pos[1][0] = Int2Fix8(-20); pos[1][1] = Int2Fix8(0);   pos[1][2] = Int2Fix8(0);	
-	pos[2][0] = Int2Fix8(0);   pos[2][1] = Int2Fix8(-20); pos[2][2] = Int2Fix8(0);	
-	pos[3][0] = Int2Fix8(20);  pos[3][1] = Int2Fix8(0);   pos[3][2] = Int2Fix8(0);	
-	names[1] = CreateSphere(&nVerts[1], &nTris[1], &verts[1], &norms[1], &tris[1], &pxls[1]);
-	names[2] = CreateCylinder(6, &nVerts[2], &nTris[2], &verts[2], &norms[2], &tris[2], &pxls[2]);
-	names[3] = CreateBox(&nVerts[3], &nTris[3], &verts[3], &norms[3], &tris[3], &pxls[3]);	
+	pos[0][0] = Int2Fix8(-20); pos[0][1] = Int2Fix8(0);   pos[0][2] = Int2Fix8(0);	
+	pos[1][0] = Int2Fix8(0);   pos[1][1] = Int2Fix8(-20); pos[1][2] = Int2Fix8(0);	
+	pos[2][0] = Int2Fix8(20);  pos[2][1] = Int2Fix8(0);   pos[2][2] = Int2Fix8(0);	
+	names[0] = CreateSphere(20, &nVerts[0], &nTris[0], &verts[0], &norms[0], &tris[0], &pxls[0]);
+	names[1] = CreateCylinder(8, &nVerts[1], &nTris[1], &verts[1], &norms[1], &tris[1], &pxls[1]);
+	names[2] = CreateBox(&nVerts[2], &nTris[2], &verts[2], &norms[2], &tris[2], &pxls[2]);	
 
+	// Read STL Mesh
+	pos[3][0] = Int2Fix8(0); pos[3][1] = Int2Fix8(0); pos[3][2] = Int2Fix8(0);	
+	rot[3][0] = Int2Fix8(0); rot[3][1] = Int2Fix8(0); rot[3][2] = Int2Fix8(0);	
+	dim[3][0] = Int2Fix8(1); dim[3][1] = Int2Fix8(1); dim[3][2] = Int2Fix8(1);
+	names[3] = ReadSTL("logo.stl", &nVerts[3], &nTris[3], &verts[3], &norms[3], &tris[3], &pxls[3]);
+	
 	// Initialize Screen
 	StartTGI();
-	DrawGUI(meshSel, names, pos[meshSel], rot[meshSel], dim[meshSel]);
+	DrawGUI(names, pos[selMesh], rot[selMesh], dim[selMesh]);
 
 	// Show Mouse
+	UpdateCamera();
 	mouse_show ();
 	mouseX = -1;
 	
@@ -104,7 +106,12 @@ int main (void)
 
 					// Refresh axes
 					UpdateCamera();
-					RenderAxes();	
+					RenderAxes();
+					
+					// Set render flags
+					for (i = 0; i < MAXMESH; ++i) {
+						renderMask[i] = MASK_RASTERIZE | MASK_DRAW;
+					}
 				}
 			// Located in GUI part?
 			} else {
@@ -124,10 +131,33 @@ int main (void)
 				// Change mesh selection?
 				if (info.pos.x > listX && info.pos.x < listX+listW && 
 				    info.pos.y > listY && info.pos.y < listY+listH ) {
-					meshSel = (info.pos.y - listY) / 12;
-					DrawList(listX, listY, listW, listH, meshSel, names);
-					DrawProps(pos[meshSel], rot[meshSel], dim[meshSel]);
+					selMesh = (info.pos.y - listY) / 12;
+					DrawList(listX, listY, listW, listH, names, selMesh);
+					DrawProps(pos[selMesh], rot[selMesh], dim[selMesh]);
+				}
+
+				// Edit mesh properties?
+				if (info.pos.x > propsX && info.pos.x < propsX+propsW && 
+				    info.pos.y > propsY && info.pos.y < propsY+propsH ) {
+					rot[selMesh][0] = Int2Fix8(45);
+					rot[selMesh][2] = Int2Fix8(45);
+					DrawProps(pos[selMesh], rot[selMesh], dim[selMesh]);
+
+					// Set render flags
+					for (i = 0; i < MAXMESH; ++i) {
+						renderMask[i] = MASK_DRAW;
+					}
+					renderMask[selMesh] |= MASK_TRANSFORM; 					
+					renderMask[selMesh] |= MASK_RASTERIZE; 					
+					doRender = true;
 				}				
+				
+				// Change tab selection?
+				if (info.pos.x > tabsX && info.pos.x < tabsX+tabsW && 
+				    info.pos.y > tabsY && info.pos.y < tabsY+tabsH ) {
+					selTab = (info.pos.x - tabsX) / 33;
+					DrawControls();
+				}
 			}
 		}
 			
@@ -135,16 +165,12 @@ int main (void)
 		if (doRender) {
 			// Reset state
 			doRender = false;
-			time = clock();
-			UpdateCamera();
-			for (i = 0; i < meshNum; ++i) {
-				Rasterize(pos[i], rot[i], dim[i], nVerts[i], &verts[i], &pxls[i]);
-			}
-
+			
 			// Render scene
+			time = clock();
 			ResetCanvas();
 			for (i = 0; i < meshNum; ++i) {
-				RenderMesh(nTris[i], &tris[i], &norms[i], &pxls[i]);
+				RenderMesh(pos[i], rot[i], dim[i], nTris[i], nVerts[i], &tris[i], &norms[i], &verts[i], &pxls[i], &renderMask[i]);
 			}
 			RenderAxes();							
 			time = clock() - time;			
