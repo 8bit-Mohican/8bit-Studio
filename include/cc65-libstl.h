@@ -2,8 +2,6 @@
 /*                                STL Library                                */
 /*****************************************************************************/
 
-#include "cc65-libmemory.h"
-
 /* Get little-endian unsigned numbers, using unsigned char* p.
 ** On many machines this could be (*(unsigned short*) p),
 ** but I really like portability. :-)  */
@@ -97,11 +95,11 @@ const char* ReadSTL(char *filename, int *nVerts, int *nTris, fix8 **verts, fix8 
 	(*nVerts) = v/6;
 	ReallocFix8(verts, (*nVerts)*6);
 	
-	// Display message
+	// Display processing time
     sec = (time * 10) / CLK_TCK;
     sec10 = sec % 10;
     sec /= 10;	
-	printf ("%d triangles / %d vertices in %lu.%us", (*nTris), (*nVerts), sec, sec10);	
+	printf ("%d triangles / %d vertices in %lu.%us\n", (*nTris), (*nVerts), sec, sec10);	
 
 	// Allocate pixel data in main memory (for fast drawing)
 	(*pxls) = (int*) malloc ((*nVerts)*2*sizeof(int));

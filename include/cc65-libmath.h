@@ -2,6 +2,8 @@
 /*                           Integer Math Library                            */
 /*****************************************************************************/
 
+#define SIGN(A) (A > 0 ? 1 : (A < 0 ? -1 : 0))
+
 unsigned char __fastcall__ sqrt8(unsigned char arg);
 unsigned char __fastcall__ sqrt16(unsigned int arg);
 

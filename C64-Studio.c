@@ -1,16 +1,17 @@
 
 #include <cc65.h>
 #include <conio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
 
-#include "include/cc65-libcsg.h"
 #include "include/cc65-libmemory.h"
 #include "include/cc65-libmouse.h"
 #include "include/cc65-libprimitives.h"
 #include "include/cc65-librender.h"
 #include "include/cc65-libstl.h"
+#include "include/cc65-libcsg.h"
 
 #define MAXMESH 8
 
@@ -60,17 +61,19 @@ int main (void)
 	meshNum = 4;
 	for (i = 0; i < meshNum; ++i) {
 		rot[i][0] = Int2Fix8(0);   rot[i][1] = Int2Fix8(0);  rot[i][2] = Int2Fix8(0);	
-		dim[i][0] = Int2Fix8(10);  dim[i][1] = Int2Fix8(10); dim[i][2] = Int2Fix8(10);		
+		dim[i][0] = Int2Fix8(15);  dim[i][1] = Int2Fix8(15); dim[i][2] = Int2Fix8(15);		
 	}
-	pos[0][0] = Int2Fix8(-20); pos[0][1] = Int2Fix8(0);   pos[0][2] = Int2Fix8(0);	
-	pos[1][0] = Int2Fix8(0);   pos[1][1] = Int2Fix8(-20); pos[1][2] = Int2Fix8(0);	
-	pos[2][0] = Int2Fix8(20);  pos[2][1] = Int2Fix8(0);   pos[2][2] = Int2Fix8(0);	
+	pos[0][0] = Int2Fix8(-10); pos[0][1] = Int2Fix8(10); pos[0][2] = Int2Fix8(0);	
+	pos[1][0] = Int2Fix8(-10); pos[1][1] = Int2Fix8(0);  pos[1][2] = Int2Fix8(0);	
+	pos[2][0] = Int2Fix8(-10); pos[2][1] = Int2Fix8(0);  pos[2][2] = Int2Fix8(-10);	
+	rot[2][0] = Int2Fix8(45);  rot[2][1] = Int2Fix8(0);  rot[2][2] = Int2Fix8(0);	
+	dim[2][0] = Int2Fix8(10);  dim[2][1] = Int2Fix8(10); dim[2][2] = Int2Fix8(10);
 	names[0] = CreateSphere(20, &nVerts[0], &nTris[0], &verts[0], &norms[0], &tris[0], &pxls[0]);
 	names[1] = CreateCylinder(8, &nVerts[1], &nTris[1], &verts[1], &norms[1], &tris[1], &pxls[1]);
 	names[2] = CreateBox(&nVerts[2], &nTris[2], &verts[2], &norms[2], &tris[2], &pxls[2]);
 
 	// Read STL Mesh
-	pos[3][0] = Int2Fix8(0); pos[3][1] = Int2Fix8(0); pos[3][2] = Int2Fix8(0);	
+	pos[3][0] = Int2Fix8(10); pos[3][1] = Int2Fix8(0); pos[3][2] = Int2Fix8(0);	
 	rot[3][0] = Int2Fix8(0); rot[3][1] = Int2Fix8(0); rot[3][2] = Int2Fix8(0);	
 	dim[3][0] = Int2Fix8(1); dim[3][1] = Int2Fix8(1); dim[3][2] = Int2Fix8(1);
 	names[3] = ReadSTL("logo.stl", &nVerts[3], &nTris[3], &verts[3], &norms[3], &tris[3], &pxls[3]);
@@ -80,6 +83,11 @@ int main (void)
 		Transform(pos[i], rot[i], dim[i], nTris[i], nVerts[i], &tris[i], &norms[i], &verts[i]);
 	}
 	
+	// CSG Test: Split Faces
+	//SplitFaces(nTris[0], nVerts[0], &tris[0], &norms[0], &verts[0], nTris[1], nVerts[1], &tris[1], &norms[1], &verts[1]);
+	//while (!kbhit()) { }
+	//cgetc();
+		
 	// Initialize Screen
 	StartTGI();
 	DrawGUI(names, pos[selMesh], rot[selMesh], dim[selMesh]);
