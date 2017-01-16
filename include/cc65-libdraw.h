@@ -29,13 +29,13 @@ const int listW = 80;
 const int listH = 48;
 
 const int propsX = 250;
-const int propsY = 70;
+const int propsY = 68;
 const int propsW = 70;
-const int propsH = 40;
+const int propsH = 36;
 
 static int selTab = 0;
 const int tabsX = 220;
-const int tabsY = 120;
+const int tabsY = 115;
 const int tabsW = 100;
 const int tabsH = 12;
 
@@ -187,55 +187,76 @@ static void DrawProps (fix8 pos[3], fix8 rot[3], fix8 dim[3])
 	snprintf(dump, 8, "%ld", pos[2]/256);
 	tgi_outtextxy(300, 80, dump);
 
-	tgi_outtextxy(225, 95, "Rot:");
+	tgi_outtextxy(225, 92, "Rot:");
 	snprintf(dump, 8, "%ld", rot[0]/256);
-	tgi_outtextxy(250, 95, dump);
+	tgi_outtextxy(250, 92, dump);
 	snprintf(dump, 8, "%ld", rot[1]/256);
-	tgi_outtextxy(275, 95, dump);
+	tgi_outtextxy(275, 92, dump);
 	snprintf(dump, 8, "%ld", rot[2]/256);
-	tgi_outtextxy(300, 95, dump);
+	tgi_outtextxy(300, 92, dump);
 	
-	tgi_outtextxy(225, 110, "Dim:");
+	tgi_outtextxy(225, 104, "Dim:");
 	snprintf(dump, 8, "%ld", dim[0]/256);
-	tgi_outtextxy(250, 110, dump);
+	tgi_outtextxy(250, 104, dump);
 	snprintf(dump, 8, "%ld", dim[1]/256);
-	tgi_outtextxy(275, 110, dump);
+	tgi_outtextxy(275, 104, dump);
 	snprintf(dump, 8, "%ld", dim[2]/256);
-	tgi_outtextxy(300, 110, dump);
+	tgi_outtextxy(300, 104, dump);
 }
 
 static void DrawControls()
 {
 	// Reset background
 	tgi_setcolor (COLOR_BACK);
-	tgi_bar(221, 121, 319, 199);
+	tgi_bar(221, 116, 319, 189);
 	tgi_setcolor (COLOR_FORE);
 	
 	// Draw tabs
-	DrawButton(220, 120, 33, 12, "Prim", selTab == 0);
-	DrawButton(253, 120, 33, 12, "Bool", selTab == 1);
-	DrawButton(286, 120, 33, 12, "Scene", selTab == 2);
+	DrawButton(220, 115, 33, 12, "Prim", selTab == 0);
+	DrawButton(253, 115, 33, 12, "Bool", selTab == 1);
+	DrawButton(286, 115, 33, 12, "Scene", selTab == 2);
 		
 	// Draw buttons
 	if (selTab == 0) {
-		DrawButton(230, 140-2, 80, 12, "Add Box", false);
-		DrawButton(230, 155-2, 80, 12, "Add Cone", false);
-		DrawButton(230, 170-2, 80, 12, "Add Cylinder", false);
-		DrawButton(230, 185-2, 80, 12, "Add Sphere", false);
+		DrawButton(230, 130, 80, 12, "Add Box", false);
+		DrawButton(230, 145, 80, 12, "Add Cone", false);
+		DrawButton(230, 160, 80, 12, "Add Cylinder", false);
+		DrawButton(230, 175, 80, 12, "Add Sphere", false);
 	}
 	
 	if (selTab == 1) {
-		DrawButton(230, 140-2, 80, 12, "Difference", false);
-		DrawButton(230, 155-2, 80, 12, "Intersect", false);
-		DrawButton(230, 170-2, 80, 12, "Union", false);
+		DrawButton(230, 130, 80, 12, "Difference", false);
+		DrawButton(230, 145, 80, 12, "Intersect", false);
+		DrawButton(230, 160, 80, 12, "Union", false);
 	}	
 	
 	if (selTab == 2) {
-		DrawButton(230, 140-2, 80, 12, "Load Disk", false);
-		DrawButton(230, 155-2, 80, 12, "Save Disk", false);
-		DrawButton(230, 170-2, 80, 12, "Download", false);
-		DrawButton(230, 185-2, 80, 12, "Upload", false);
+		DrawButton(230, 130, 80, 12, "Load Disk", false);
+		DrawButton(230, 145, 80, 12, "Save Disk", false);
+		DrawButton(230, 160, 80, 12, "Download", false);
+		DrawButton(230, 175, 80, 12, "Upload", false);
 	}		
+}
+
+static void DrawPerf (clock_t time)
+{
+	char dump[20];
+	unsigned long sec;
+    unsigned sec10;
+
+    // Calculate stats
+    sec = (time * 10) / CLK_TCK;
+    sec10 = sec % 10;
+    sec /= 10;
+
+	// Reset background
+	tgi_setcolor (COLOR_BACK);
+	tgi_bar(221, 191, 319, 199);
+	tgi_setcolor (COLOR_FORE);
+	
+    // Output stats
+	snprintf(dump, 20, "render time: %lu.%us", sec, sec10);
+	tgi_outtextxy(222, 198, dump);
 }
 
 static void DrawGUI (const char *names[], fix8 pos[3], fix8 rot[3], fix8 dim[3]) 
@@ -243,7 +264,8 @@ static void DrawGUI (const char *names[], fix8 pos[3], fix8 rot[3], fix8 dim[3])
 	// Separators
 	tgi_setcolor (COLOR_FORE);
 	tgi_line(220, 0, 220, 200);
-	tgi_line(220, 120, 319, 120);
+	tgi_line(220, 115, 319, 115);
+	tgi_line(220, 190, 319, 190);
 	
 	// Top Section
 	tgi_outtextxy(240, 10, "C64 Studio");	
@@ -254,35 +276,3 @@ static void DrawGUI (const char *names[], fix8 pos[3], fix8 rot[3], fix8 dim[3])
 	DrawControls();
 }
 
-static void ShowStats (clock_t t, unsigned long f) 
-{
-	unsigned long sec;
-    unsigned      sec10;
-    unsigned long fps;
-    unsigned      fps10;
-	
-    /* Set the border and background colors */
-    bordercolor (COLOR_BLUE);
-    bgcolor (COLOR_BLUE);
-    textcolor (COLOR_BLACK);
-    clrscr ();	
-
-    /* Calculate stats */
-    sec   = (t * 10) / CLK_TCK;
-    sec10 = sec % 10;
-    sec  /= 10;
-    fps   = (f * (CLK_TCK * 10)) / t;
-    fps10 = fps % 10;
-    fps  /= 10;
-
-    /* Output stats */
-    gotoxy (0, 0); cprintf ("time  : %lu.%us", sec, sec10);
-    gotoxy (0, 1); cprintf ("frames: %lu", f);
-    gotoxy (0, 2); cprintf ("fps   : %lu.%u", fps, fps10);
-
-	/* Wait for input */
-    if (doesclrscrafterexit ()) {
-        cputsxy (0, 4, "Press any key when done...");
-        (void) cgetc ();
-    }
-}

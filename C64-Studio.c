@@ -55,7 +55,7 @@ int main (void)
 	}
 
 	// Create primitives
-	meshNum = 4;
+	meshNum = 3;
 	for (i = 0; i < meshNum; ++i) {
 		rot[i][0] = Int2Fix8(0);   rot[i][1] = Int2Fix8(0);  rot[i][2] = Int2Fix8(0);	
 		dim[i][0] = Int2Fix8(10);  dim[i][1] = Int2Fix8(10); dim[i][2] = Int2Fix8(10);		
@@ -68,10 +68,10 @@ int main (void)
 	names[2] = CreateBox(&nVerts[2], &nTris[2], &verts[2], &norms[2], &tris[2], &pxls[2]);	
 
 	// Read STL Mesh
-	pos[3][0] = Int2Fix8(0); pos[3][1] = Int2Fix8(0); pos[3][2] = Int2Fix8(0);	
-	rot[3][0] = Int2Fix8(0); rot[3][1] = Int2Fix8(0); rot[3][2] = Int2Fix8(0);	
-	dim[3][0] = Int2Fix8(1); dim[3][1] = Int2Fix8(1); dim[3][2] = Int2Fix8(1);
-	names[3] = ReadSTL("logo.stl", &nVerts[3], &nTris[3], &verts[3], &norms[3], &tris[3], &pxls[3]);
+	//pos[3][0] = Int2Fix8(0); pos[3][1] = Int2Fix8(0); pos[3][2] = Int2Fix8(0);	
+	//rot[3][0] = Int2Fix8(0); rot[3][1] = Int2Fix8(0); rot[3][2] = Int2Fix8(0);	
+	//dim[3][0] = Int2Fix8(1); dim[3][1] = Int2Fix8(1); dim[3][2] = Int2Fix8(1);
+	//names[3] = ReadSTL("logo.stl", &nVerts[3], &nTris[3], &verts[3], &norms[3], &tris[3], &pxls[3]);
 	
 	// Initialize Screen
 	StartTGI();
@@ -173,13 +173,11 @@ int main (void)
 				RenderMesh(pos[i], rot[i], dim[i], nTris[i], nVerts[i], &tris[i], &norms[i], &verts[i], &pxls[i], &renderMask[i]);
 			}
 			RenderAxes();							
-			time = clock() - time;			
+			time = clock() - time;
+			DrawPerf(time);
 		}
 	}
 	StopTGI();
-	
-	// Show stats
-	ShowStats(time, 1);
 	
     // Done
     return EXIT_SUCCESS;
