@@ -2,6 +2,7 @@
 #include <cc65.h>
 #include <conio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <time.h>
 
 #include "include/cc65-libcsg.h"

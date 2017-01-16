@@ -2,8 +2,6 @@
 /*                                STL Library                                */
 /*****************************************************************************/
 
-#include <stdio.h>
-
 #include "cc65-libmemory.h"
 
 /* Get little-endian unsigned numbers, using unsigned char* p.
@@ -21,6 +19,9 @@ const char* ReadSTL(char *filename, int *nVerts, int *nTris, fix8 **verts, fix8 
 	unsigned int i,j,k;
 	fix8 vX, vY, vZ;
 	unsigned int vN;
+	unsigned long sec;
+    unsigned sec10;
+	clock_t time;
 	FILE* fp;
 	
 	// Try to open file...
@@ -37,7 +38,6 @@ const char* ReadSTL(char *filename, int *nVerts, int *nTris, fix8 **verts, fix8 
 	(*nTris) = GET_WORD(buffer);
 	(*nVerts) = 3*GET_WORD(buffer);
 	printf ("Header: %s\n", header);	
-	printf ("Triangles: %d\n", GET_WORD(buffer));
 	
 	// Allocate memory for triangles/normals/vertices
 	MallocInt(tris, (*nTris)*3);
@@ -45,6 +45,7 @@ const char* ReadSTL(char *filename, int *nVerts, int *nTris, fix8 **verts, fix8 
 	MallocFix8(verts, (*nVerts)*6);
 	
 	// Read data from file
+	time = clock();
 	for (i = 0; i < (*nTris); ++i) {
 		// Normals	
 		fread(buffer, 4, 1, fp);
@@ -88,14 +89,20 @@ const char* ReadSTL(char *filename, int *nVerts, int *nTris, fix8 **verts, fix8 
 		}
 		
 		// Discard Attribute
-		fread(buffer, 2, 1, fp);		
+		fread(buffer, 2, 1, fp);	
 	}
+	time = clock() - time;
 	
 	// Shrink vertices memory
 	(*nVerts) = v/6;
 	ReallocFix8(verts, (*nVerts)*6);
-	printf ("Vertices: %d\n", (*nVerts));	
 	
+	// Display message
+    sec = (time * 10) / CLK_TCK;
+    sec10 = sec % 10;
+    sec /= 10;	
+	printf ("%d triangles / %d vertices in %lu.%us", (*nTris), (*nVerts), sec, sec10);	
+
 	// Allocate pixel data in main memory (for fast drawing)
 	(*pxls) = (int*) malloc ((*nVerts)*2*sizeof(int));
 	
