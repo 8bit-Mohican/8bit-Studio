@@ -2,9 +2,14 @@
 /*                           Integer Math Library                            */
 /*****************************************************************************/
 
-int iSqrt(int n)
+unsigned char __fastcall__ sqrt8(unsigned char arg);
+unsigned char __fastcall__ sqrt16(unsigned int arg);
+
+int sqrt32(long arg)
 {
-	 int root = 0, remainder = n, place = 0x4000;
+	 long root = 0;
+	 long remainder = arg;
+	 long place = 0x40000000;
 	 while (place > remainder) {
 		place = place >> 2; 
 	 }
@@ -18,3 +23,15 @@ int iSqrt(int n)
 	 }
 	 return root;
 }
+
+int sqrt(long arg)
+{
+	if (arg < 0x100) {
+		return sqrt8(arg);
+	} else if (arg < 0x10000) {
+		return sqrt16(arg);
+	} else {
+		return sqrt32(arg);		
+	}
+}
+

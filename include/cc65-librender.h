@@ -182,8 +182,8 @@ static void RenderAxes()
 	vY[0] = scrPt[0]-15; vY[1] = scrPt[1]-15;
 
 	// Compute norm
-	nX = iSqrt(vX[0]*vX[0]+vX[1]*vX[1]);
-	nY = iSqrt(vY[0]*vY[0]+vY[1]*vY[1]);
+	nX = sqrt(vX[0]*vX[0]+vX[1]*vX[1]);
+	nY = sqrt(vY[0]*vY[0]+vY[1]*vY[1]);
 	
 	// Reset block
 	tgi_setcolor (COLOR_BACK);
