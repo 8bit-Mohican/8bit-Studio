@@ -9,8 +9,8 @@
 #include "cc65-libmatrix.h"
 #include "cc65-libmemory.h"
 
-fix8 canvasW = 2*256;
-fix8 canvasH = 2*256;
+fix8 canvasW = Int2Fix8(2);
+fix8 canvasH = Int2Fix8(2);
 
 fix8 worldToCamera[16] = { 256,     0,     0,     0,
 							 0,   256,     0,     0,
@@ -21,13 +21,17 @@ fix8 camVec[3] = {0,0,256};
 
 fix8 xCam = 30;
 fix8 zCam = 330;
-fix8 xCos, zCos;
-fix8 xSin, zSin;
 
 static void UpdateCamera() 
 {
+	fix8 xCos, zCos;
+	fix8 xSin, zSin;
+	
+	// Compute cos and sin of angles
 	xCos = cc65_cos(xCam); xSin = cc65_sin(xCam);
 	zCos = cc65_cos(zCam); zSin = cc65_sin(zCam);
+	
+	// Update camera matrix
 	worldToCamera[4*0+0] = ( zCos        );
 	worldToCamera[4*0+1] = (-zSin *  xCos) / 256;
 	worldToCamera[4*0+2] = (-zSin * -xSin) / 256;
@@ -37,6 +41,8 @@ static void UpdateCamera()
 	worldToCamera[4*2+0] = (      0	    );
 	worldToCamera[4*2+1] = ( 	    xSin);
 	worldToCamera[4*2+2] = ( 	    xCos);	
+	
+	// Update camera vector
 	camVec[0] =  zSin * -xSin / 256;
 	camVec[1] = -zCos * -xSin / 256;
 	camVec[2] = -xCos;	
@@ -85,7 +91,7 @@ static void RenderMesh(int nTris, int nVerts, int **tris, fix8 **norms, fix8 **v
 			normal[0] = ReadFix8(norms, i*3+0);
 			normal[1] = ReadFix8(norms, i*3+1);
 			normal[2] = ReadFix8(norms, i*3+2);
-			if (VectorVectorDot(normal,camVec) >= 0) {
+			if (VectorVectorDot(&normal[0],&camVec[0]) >= 0) {
 				visible[i] = true;
 			} else {
 				visible[i] = false;			

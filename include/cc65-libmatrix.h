@@ -18,7 +18,7 @@ static void MatrixVectorMult(fix8 *mat, fix8 *vec)
 	MVM[2] = (vec[0]*mat[0+2] + vec[1]*mat[4+2] + vec[2]*mat[8+2] + 256*mat[12+2]) / w;
 }
 
-static fix8 VectorVectorDot(fix8 v1[3], fix8 v2[3])
+static fix8 VectorVectorDot(fix8 *v1, fix8 *v2)
 {
 	return (v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2])/256;
 }
