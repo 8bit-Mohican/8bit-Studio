@@ -10,8 +10,8 @@
 
 #include "cc65-libfix8.h"
 
-#define MASK_RASTERIZE   1  // 2^0, bit 0
-#define MASK_DRAW        2  // 2^1, bit 1
+#define MASK_RASTER   1  // 2^0, bit 0
+#define MASK_DRAW     2  // 2^1, bit 1
 
 static int useREU = 0;
 

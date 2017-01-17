@@ -12,10 +12,10 @@
 fix8 canvasW = 2*256;
 fix8 canvasH = 2*256;
 
-fix8 worldToCamera[4][4] = { { 256,     0,     0,     0},
-							 {   0,   256,     0,     0},
-							 {   0,     0,   256,     0},
-							 {   0,     0, 10240,   256} };						 
+fix8 worldToCamera[16] = { 256,     0,     0,     0,
+							 0,   256,     0,     0,
+							 0,     0,   256,     0,
+							 0,     0, 10240,   256 };						 
 
 fix8 camVec[3] = {0,0,256};
 
@@ -28,63 +28,52 @@ static void UpdateCamera()
 {
 	xCos = cc65_cos(xCam); xSin = cc65_sin(xCam);
 	zCos = cc65_cos(zCam); zSin = cc65_sin(zCam);
-	worldToCamera[0][0] = ( zCos        );
-	worldToCamera[0][1] = (-zSin *  xCos) / 256;
-	worldToCamera[0][2] = (-zSin * -xSin) / 256;
-	worldToCamera[1][0] = ( zSin	    );
-	worldToCamera[1][1] = ( zCos *  xCos) / 256;
-	worldToCamera[1][2] = ( zCos * -xSin) / 256;
-	worldToCamera[2][0] = (      0	    );
-	worldToCamera[2][1] = ( 	    xSin);
-	worldToCamera[2][2] = ( 	    xCos);	
+	worldToCamera[4*0+0] = ( zCos        );
+	worldToCamera[4*0+1] = (-zSin *  xCos) / 256;
+	worldToCamera[4*0+2] = (-zSin * -xSin) / 256;
+	worldToCamera[4*1+0] = ( zSin	    );
+	worldToCamera[4*1+1] = ( zCos *  xCos) / 256;
+	worldToCamera[4*1+2] = ( zCos * -xSin) / 256;
+	worldToCamera[4*2+0] = (      0	    );
+	worldToCamera[4*2+1] = ( 	    xSin);
+	worldToCamera[4*2+2] = ( 	    xCos);	
 	camVec[0] =  zSin * -xSin / 256;
 	camVec[1] = -zCos * -xSin / 256;
 	camVec[2] = -xCos;	
 }
 
-fix8 canPt[2];
 int scrPt[2];
 
-static void ComputePixel(fix8 wldPt[3])
+static void ComputePixel(fix8 *wldPt)
 {
-	MatrixVectorMult(worldToCamera, wldPt);
-    canPt[0] = (256 * MVM[0]) / -MVM[2]; 
-    canPt[1] = (256 * MVM[1]) / -MVM[2];
-
-    scrPt[0] = screenW * (canPt[0] + canvasW/2) / canvasW;
-    scrPt[1] = screenH - screenH * (canPt[1] + canvasH/2) / canvasH;
-}
-
-fix8 wldPt[3];
-
-static void Rasterize(int nVerts, fix8 **verts, int **pxls)
-{	
-	// Rasterize mesh
-	int i,k;
-	for (i = 0; i < nVerts; ++i) {
-		// Read transformed point
-		for (k = 0; k < 3; ++k) {
-			wldPt[k] = ReadFix8(verts,i*6+k+3); 
-		}
-
-		// Project point to screen
-		ComputePixel(wldPt);
-		(*pxls)[i*2+0] = scrPt[0]; 
-		(*pxls)[i*2+1] = scrPt[1]; 
-	}
+	MatrixVectorMult(&worldToCamera[0], wldPt);
+    scrPt[0] = screenW * (canvasW/2 - (256*MVM[0])/MVM[2]) / canvasW;
+    scrPt[1] = screenH - screenH * (canvasH/2 - (256*MVM[1])/MVM[2]) / canvasH;
 }
 
 static void RenderMesh(int nTris, int nVerts, int **tris, fix8 **norms, fix8 **verts, int **pxls, char *renderMask) 
 {
+	fix8 vertice[3];
 	fix8 normal[3];
 	int vertices[3];	
-	int i,x0,y0,x1,y1,x2,y2;
+	int i,j,x0,y0,x1,y1,x2,y2;
 	bool *visible;
 	
 	// Do Rasterize?
-	if ((*renderMask) & MASK_RASTERIZE) {
-		Rasterize(nVerts, verts, pxls);
-		(*renderMask) &= ~MASK_RASTERIZE;
+	if ((*renderMask) & MASK_RASTER) {
+		// Go through all vertices, and compute pixels
+		for (i = 0; i < nVerts; ++i) {
+			// Read transformed point
+			for (j = 0; j < 3; ++j) {
+				vertice[j] = ReadFix8(verts,i*6+j+3); 
+			}
+
+			// Project point to screen
+			ComputePixel(&vertice[0]);
+			(*pxls)[i*2+0] = scrPt[0]; 
+			(*pxls)[i*2+1] = scrPt[1]; 
+		}
+		(*renderMask) &= ~MASK_RASTER;
 	}
 
 	// Do Draw?
@@ -144,11 +133,13 @@ static void RenderAxes()
 	// Shrink render size
 	screenW = 30; screenH = 30;
 	
-	// Compute vectors
-	ComputePixel(wX);
-	vX[0] = scrPt[0]-15; vX[1] = scrPt[1]-15;
-	ComputePixel(wY);
-	vY[0] = scrPt[0]-15; vY[1] = scrPt[1]-15;
+	// Compute X/Y axis vectors
+	ComputePixel(&wX[0]);
+	vX[0] = scrPt[0]-15; 
+	vX[1] = scrPt[1]-15;
+	ComputePixel(&wY[0]);
+	vY[0] = scrPt[0]-15; 
+	vY[1] = scrPt[1]-15;
 
 	// Compute norm
 	nX = sqrt(vX[0]*vX[0]+vX[1]*vX[1]);

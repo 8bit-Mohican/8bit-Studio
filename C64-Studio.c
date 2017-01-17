@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 #include "include/cc65-libmemory.h"
@@ -54,7 +55,7 @@ int main (void)
 		pos[i] = (fix8*) malloc (3*sizeof(fix8));
 		rot[i] = (fix8*) malloc (3*sizeof(fix8));
 		dim[i] = (fix8*) malloc (3*sizeof(fix8));
-		renderMask[i] = MASK_RASTERIZE | MASK_DRAW;
+		renderMask[i] = MASK_RASTER | MASK_DRAW;
 	}
 
 	// Create primitives
@@ -126,7 +127,7 @@ int main (void)
 					// Set render flags
 					doRender = true;
 					for (i = 0; i < MAXMESH; ++i) {
-						renderMask[i] = MASK_RASTERIZE | MASK_DRAW;
+						renderMask[i] = MASK_RASTER | MASK_DRAW;
 					}
 				}
 			// Located in GUI part?
@@ -144,7 +145,7 @@ int main (void)
 				// Set render flags
 				doRender = true;
 				for (i = 0; i < MAXMESH; ++i) {
-					renderMask[i] = MASK_RASTERIZE | MASK_DRAW;
+					renderMask[i] = MASK_RASTER | MASK_DRAW;
 				}				
 			}
 		} else {
@@ -176,7 +177,7 @@ int main (void)
 					for (i = 0; i < MAXMESH; ++i) {
 						renderMask[i] = MASK_DRAW;
 					}
-					renderMask[selMesh] |= MASK_RASTERIZE; 					
+					renderMask[selMesh] |= MASK_RASTER; 					
 				}				
 				
 				// Change tab selection?

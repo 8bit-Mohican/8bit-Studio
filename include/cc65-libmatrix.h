@@ -9,18 +9,13 @@
 
 fix8 MVM[3];
 
-static void MatrixVectorMult(fix8 mat[4][4], fix8 src[3])
+static void MatrixVectorMult(fix8 *mat, fix8 *vec)
 {
-	fix8 a, b, c, w;
-	
-	a = (src[0] * mat[0][0] + src[1] * mat[1][0] + src[2] * mat[2][0])/256 + mat[3][0];
-	b = (src[0] * mat[0][1] + src[1] * mat[1][1] + src[2] * mat[2][1])/256 + mat[3][1];
-	c = (src[0] * mat[0][2] + src[1] * mat[1][2] + src[2] * mat[2][2])/256 + mat[3][2];
-	w = (src[0] * mat[0][3] + src[1] * mat[1][3] + src[2] * mat[2][3])/256 + mat[3][3];
-	
-	MVM[0] = 256 * a / w;
-	MVM[1] = 256 * b / w;
-	MVM[2] = 256 * c / w;
+	// TODO: convert to ASM for faster computation, as this is frequently called
+	fix8 w = (vec[0] * mat[0+3] + vec[1] * mat[4+3] + vec[2] * mat[8+3])/256 + mat[12+3];	
+	MVM[0] = (vec[0]*mat[0+0] + vec[1]*mat[4+0] + vec[2]*mat[8+0] + 256*mat[12+0]) / w;
+	MVM[1] = (vec[0]*mat[0+1] + vec[1]*mat[4+1] + vec[2]*mat[8+1] + 256*mat[12+1]) / w;
+	MVM[2] = (vec[0]*mat[0+2] + vec[1]*mat[4+2] + vec[2]*mat[8+2] + 256*mat[12+2]) / w;
 }
 
 static fix8 VectorVectorDot(fix8 v1[3], fix8 v2[3])
