@@ -2,6 +2,7 @@
 /*                               Drawing Stuff                               */
 /*****************************************************************************/
 
+#include <cbm.h>
 #include <stdbool.h>
 #include <tgi.h>
 
@@ -10,16 +11,14 @@
 #endif
 
 #define COLOR_BACK      TGI_COLOR_BLACK
-#define COLOR_BORDER    15					// Light-Grey
+#define COLOR_BORDER    TGI_COLOR_GRAY2
 #define COLOR_FORE      TGI_COLOR_WHITE
-
-static int screenW = 220;
-static int screenH = 200;
 
 static unsigned MaxX;
 static unsigned MaxY;
 static unsigned AspectRatio;
 
+static const unsigned char Palette[2] = { COLOR_FORE, COLOR_BACK };
 const tgi_vectorfont* font = 0;
 
 static int selMesh = 0;
@@ -62,9 +61,7 @@ static const tgi_vectorfont* LoadFont (const char* Name)
 }
 
 static void InitTGI () 
-{
-    //static const unsigned char Palette[2] = { COLOR_BACK, COLOR_FORE };
-	
+{	
 	printf ("Loading Video Driver...\n");	
 #if DYN_DRV
     /* Load the driver */
@@ -85,10 +82,14 @@ static void InitTGI ()
 static void StartTGI ()
 {
     // Initialize Video Mode
-    bordercolor (COLOR_BORDER);
     tgi_init ();
     CheckTGIError ("tgi_init");
-	tgi_clear ();
+
+	// Set colors
+    bordercolor (COLOR_BORDER);
+    tgi_setpalette (Palette);	
+	tgi_setcolor (COLOR_BACK);
+	tgi_clear ();	
 
     // Get stuff from the driver
     MaxX = tgi_getmaxx ();
@@ -97,9 +98,7 @@ static void StartTGI ()
 	
 	// Set Text Style
 	tgi_settextstyle (0x100, 0x100, TGI_TEXT_HORIZONTAL, TGI_FONT_VECTOR);
-		
-	/* Set the palette, set the border color */
-    //tgi_setpalette (Palette);	
+	VIC.spr0_color = COLOR_BLACK;
 }
 
 static void StopTGI () 
@@ -111,18 +110,6 @@ static void StopTGI ()
     /* Uninstall the driver */
     tgi_uninstall ();
 #endif
-}
-
-static void DrawLine(int x0, int y0, int x1, int y1)
-{
-	// Line Drawing
-	if (x0 <= screenW && x1 <= screenW) {
-		tgi_line(x0, y0, x1, y1);
-	} else if (x0 <= screenW && x1 > screenW) {
-		tgi_line(x0, y0, screenW, y0+((y1-y0)*(screenW-x0))/(x1-x0));
-	} else if (x0 > screenW && x1 <= screenW) {
-		tgi_line(screenW, y1+((y0-y1)*(screenW-x1))/(x0-x1), x1, y1);
-	}	
 }
 
 static void DrawButton (int x, int y, int w, int h, char *text, bool highlight) 
@@ -238,9 +225,20 @@ static void DrawControls()
 	}		
 }
 
-static void DrawPerf (clock_t time)
+static void DrawStatus (const char *message)
 {
-	char dump[20];
+	// Reset background
+	tgi_setcolor (COLOR_BACK);
+	tgi_bar(31, 191, 319, 199);
+	
+	// Output message
+	tgi_setcolor (COLOR_FORE);
+	tgi_outtextxy(40, 198, message);
+}
+
+static void DrawPerf (int num, clock_t time)
+{
+	char dump[30];
 	unsigned long sec;
     unsigned sec10;
 
@@ -248,24 +246,19 @@ static void DrawPerf (clock_t time)
     sec = (time * 10) / CLK_TCK;
     sec10 = sec % 10;
     sec /= 10;
-
-	// Reset background
-	tgi_setcolor (COLOR_BACK);
-	tgi_bar(221, 191, 319, 199);
-	tgi_setcolor (COLOR_FORE);
 	
     // Output stats
-	snprintf(dump, 20, "render time: %lu.%us", sec, sec10);
-	tgi_outtextxy(222, 198, dump);
+	snprintf(dump, 30, "Rendered %d meshes in %lu.%us", num, sec, sec10);
+	DrawStatus(&dump[0]);
 }
 
 static void DrawGUI (const char *names[], fix8 pos[3], fix8 rot[3], fix8 dim[3]) 
 {	
 	// Separators
 	tgi_setcolor (COLOR_FORE);
-	tgi_line(220, 0, 220, 200);
+	tgi_line(220, 0, 220, 190);
 	tgi_line(220, 115, 319, 115);
-	tgi_line(220, 190, 319, 190);
+	tgi_line(31, 190, 319, 190);
 	
 	// Top Section
 	tgi_outtextxy(240, 10, "C64 Studio");	

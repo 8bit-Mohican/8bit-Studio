@@ -192,6 +192,7 @@ int main (void)
 			if (doRender) {
 				// Reset state
 				doRender = false;
+				DrawStatus("Rendering, please wait...");
 				
 				// Render scene
 				time = clock();
@@ -201,7 +202,7 @@ int main (void)
 				}
 				RenderAxes();							
 				time = clock() - time;
-				DrawPerf(time);
+				DrawPerf(meshNum, time);
 			}
 		}
 	}

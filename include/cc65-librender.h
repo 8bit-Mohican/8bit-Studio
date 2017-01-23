@@ -9,6 +9,9 @@
 #include "cc65-libmatrix.h"
 #include "cc65-libmemory.h"
 
+static int screenW = 220;
+static int screenH = 190;
+
 fix8 canvasW = Int2Fix8(2);
 fix8 canvasH = Int2Fix8(2);
 
@@ -55,6 +58,18 @@ static void ComputePixel(fix8 *wldPt)
 	MatrixVectorMult(&worldToCamera[0], wldPt);
     scrPt[0] = screenW * (canvasW/2 - (256*MVM[0])/MVM[2]) / canvasW;
     scrPt[1] = screenH - screenH * (canvasH/2 - (256*MVM[1])/MVM[2]) / canvasH;
+}
+
+static void DrawLine(int x0, int y0, int x1, int y1)
+{
+	// Line Drawing
+	if (x0 <= screenW && x1 <= screenW) {
+		tgi_line(x0, y0, x1, y1);
+	} else if (x0 <= screenW && x1 > screenW) {
+		tgi_line(x0, y0, screenW, y0+((y1-y0)*(screenW-x0))/(x1-x0));
+	} else if (x0 > screenW && x1 <= screenW) {
+		tgi_line(screenW, y1+((y0-y1)*(screenW-x1))/(x0-x1), x1, y1);
+	}	
 }
 
 static void RenderMesh(int nTris, int nVerts, int **tris, fix8 **norms, fix8 **verts, int **pxls, char *renderMask) 
@@ -169,7 +184,7 @@ static void RenderAxes()
 	} else { tgi_outtextxy(14, 183, "y"); }
 	
 	// Restore render size
-	screenW = 220; screenH = 200;
+	screenW = 220; screenH = 190;
 }
 
 static void ResetCanvas()
