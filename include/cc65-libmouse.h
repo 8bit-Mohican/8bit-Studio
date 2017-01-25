@@ -26,7 +26,7 @@ int mouseX, mouseY;
 
 #ifdef __CBM__
 /* Set dark-on-light colors. */
-const unsigned char mouse_def_pointercolor = COLOR_WHITE;
+const unsigned char mouse_def_pointercolor = COLOR_BLACK;
 #endif
 
 static void __fastcall__ CheckError (const char* S, unsigned char Error)
@@ -65,45 +65,13 @@ static void InitMouse ()
     screensize (&width, &height);
 }
 	
-
-	
-/*			
-	//Save Screen
-	mouse_info(&info);	
-	mouseX = info.pos.x;
-	mouseY = info.pos.y;
-	mouseMask[0][0] = tgi_getpixel(mouseX,  mouseY);
-	mouseMask[0][1] = tgi_getpixel(mouseX,  mouseY+1);
-	mouseMask[1][0] = tgi_getpixel(mouseX+1,mouseY);
-	mouseMask[1][1] = tgi_getpixel(mouseX+1,mouseY+1);	
-	mouseMask[2][0] = tgi_getpixel(mouseX+2,mouseY+2);
-	mouseMask[2][1] = tgi_getpixel(mouseX+3,mouseY+3);		
-
-			//Reset screen
-			tgi_setcolor(mouseMask[0][0]);
-			tgi_setpixel(mouseX,  mouseY);
-			tgi_setcolor(mouseMask[0][1]);
-			tgi_setpixel(mouseX,  mouseY+1);
-			tgi_setcolor(mouseMask[1][0]);
-			tgi_setpixel(mouseX+1,mouseY);
-			tgi_setcolor(mouseMask[1][1]);
-			tgi_setpixel(mouseX+1,mouseY+1);
-			tgi_setcolor(mouseMask[2][0]);
-			tgi_setpixel(mouseX+2,mouseY+2);
-			tgi_setcolor(mouseMask[2][1]);
-			tgi_setpixel(mouseX+3,mouseY+3);				
-			
-			mouseX = info.pos.x;
-			mouseY = info.pos.y;
-			mouseMask[0][0] = tgi_getpixel(mouseX,  mouseY);
-			mouseMask[0][1] = tgi_getpixel(mouseX,  mouseY+1);
-			mouseMask[1][0] = tgi_getpixel(mouseX+1,mouseY);
-			mouseMask[1][1] = tgi_getpixel(mouseX+1,mouseY+1);	
-			mouseMask[2][0] = tgi_getpixel(mouseX+2,mouseY+2);
-			mouseMask[2][1] = tgi_getpixel(mouseX+3,mouseY+3);	
-	
-			//Show mouse
-			tgi_setcolor(COLOR_FORE);
-			tgi_bar(info.pos.x, info.pos.y, info.pos.x+1, info.pos.y+1);		
-			tgi_line(info.pos.x+2, info.pos.y+2, info.pos.x+3, info.pos.y+3);
-*/
+static void StopMouse ()
+{
+#if DYN_DRV
+    /* Uninstall and unload the driver. */
+    CheckError ("mouse_unload", mouse_unload ());
+#else
+    /* Uninstall the static driver. */
+    CheckError ("mouse_uninstall", mouse_uninstall ());
+#endif
+}

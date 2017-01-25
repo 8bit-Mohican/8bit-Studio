@@ -206,6 +206,9 @@ int main (void)
 			}
 		}
 	}
+	
+	// Turn off everything
+	StopMouse();
 	StopTGI();
 	
     // Done

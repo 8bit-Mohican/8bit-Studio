@@ -2,7 +2,6 @@
 /*                               Drawing Stuff                               */
 /*****************************************************************************/
 
-#include <cbm.h>
 #include <stdbool.h>
 #include <tgi.h>
 
@@ -98,7 +97,6 @@ static void StartTGI ()
 	
 	// Set Text Style
 	tgi_settextstyle (0x100, 0x100, TGI_TEXT_HORIZONTAL, TGI_FONT_VECTOR);
-	VIC.spr0_color = COLOR_BLACK;
 }
 
 static void StopTGI () 
