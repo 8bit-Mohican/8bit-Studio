@@ -2,7 +2,13 @@
 /*                           Integer Math Library                            */
 /*****************************************************************************/
 
+#ifndef DEFINE_MATH
+#define DEFINE_MATH
+
 #define SIGN(A) (A > 0 ? 1 : (A < 0 ? -1 : 0))
+
+#define NORM2(A) (sqrt( A[0]*A[0] + A[1]*A[1] ))
+#define NORM3(A) (sqrt( A[0]*A[0] + A[1]*A[1] + A[2]*A[2] ))
 
 unsigned char __fastcall__ sqrt8(unsigned char arg);
 unsigned char __fastcall__ sqrt16(unsigned int arg);
@@ -37,3 +43,4 @@ int sqrt(long arg)
 	}
 }
 
+#endif

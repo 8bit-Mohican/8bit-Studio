@@ -4,7 +4,6 @@
 
 #include <stdbool.h>
 
-#include "cc65-libdraw.h"
 #include "cc65-libmath.h"
 #include "cc65-libmatrix.h"
 #include "cc65-libmemory.h"
@@ -15,15 +14,15 @@ static int screenH = 190;
 fix8 canvasW = Int2Fix8(2);
 fix8 canvasH = Int2Fix8(2);
 
-fix8 worldToCamera[16] = { 256,     0,     0,     0,
-							 0,   256,     0,     0,
-							 0,     0,   256,     0,
-							 0,     0, 10240,   256 };						 
+fix8 worldToCamera[16] = { 256,     0,     0,
+							 0,   256,     0,
+							 0,     0,   256,
+							 0,     0, 10240, };
 
 fix8 camVec[3] = {0,0,256};
 
-fix8 xCam = 30;
-fix8 zCam = 330;
+fix8 xCam = 40;
+fix8 zCam = 150;
 
 static void UpdateCamera() 
 {
@@ -35,15 +34,15 @@ static void UpdateCamera()
 	zCos = cc65_cos(zCam); zSin = cc65_sin(zCam);
 	
 	// Update camera matrix
-	worldToCamera[4*0+0] = ( zCos        );
-	worldToCamera[4*0+1] = (-zSin *  xCos) / 256;
-	worldToCamera[4*0+2] = (-zSin * -xSin) / 256;
-	worldToCamera[4*1+0] = ( zSin	    );
-	worldToCamera[4*1+1] = ( zCos *  xCos) / 256;
-	worldToCamera[4*1+2] = ( zCos * -xSin) / 256;
-	worldToCamera[4*2+0] = (      0	    );
-	worldToCamera[4*2+1] = ( 	    xSin);
-	worldToCamera[4*2+2] = ( 	    xCos);	
+	worldToCamera[3*0+0] = ( zCos        );
+	worldToCamera[3*0+1] = (-zSin * xCos) / 256;
+	worldToCamera[3*0+2] = ( zSin * xSin) / 256;
+	worldToCamera[3*1+0] = ( zSin	    );
+	worldToCamera[3*1+1] = ( zCos * xCos) / 256;
+	worldToCamera[3*1+2] = (-zCos * xSin) / 256;
+	worldToCamera[3*2+0] = (      0	    );
+	worldToCamera[3*2+1] = ( 	    xSin);
+	worldToCamera[3*2+2] = ( 	    xCos);	
 	
 	// Update camera vector
 	camVec[0] =  zSin * -xSin / 256;
@@ -51,13 +50,14 @@ static void UpdateCamera()
 	camVec[2] = -xCos;	
 }
 
+fix8 camPt[3];
 int scrPt[2];
 
 static void ComputePixel(fix8 *wldPt)
 {
-	MatrixVectorMult(&worldToCamera[0], wldPt);
-    scrPt[0] = screenW * (canvasW/2 - (256*MVM[0])/MVM[2]) / canvasW;
-    scrPt[1] = screenH - screenH * (canvasH/2 - (256*MVM[1])/MVM[2]) / canvasH;
+	M43mulV3(&worldToCamera[0], wldPt, &camPt[0]);
+    scrPt[0] = screenW * (canvasW/2 - (256*camPt[0])/camPt[2]) / canvasW;
+    scrPt[1] = screenH - screenH * (canvasH/2 - (256*camPt[1])/camPt[2]) / canvasH;
 }
 
 static void DrawLine(int x0, int y0, int x1, int y1)
@@ -106,7 +106,7 @@ static void RenderMesh(int nTris, int nVerts, int **tris, fix8 **norms, fix8 **v
 			normal[0] = ReadFix8(norms, i*3+0);
 			normal[1] = ReadFix8(norms, i*3+1);
 			normal[2] = ReadFix8(norms, i*3+2);
-			if (VectorVectorDot(&normal[0],&camVec[0]) >= 0) {
+			if (V3dotV3(&normal[0],&camVec[0]) >= 0) {
 				visible[i] = true;
 			} else {
 				visible[i] = false;			
@@ -145,11 +145,12 @@ static void RenderMesh(int nTris, int nVerts, int **tris, fix8 **norms, fix8 **v
 
 fix8 wX[3] = {256*30, 0, 0};
 fix8 wY[3] = {0, 256*30, 0};
+fix8 wZ[3] = {0, 0, 256*30};
 
 static void RenderAxes() 
 {
-	int vX[2], vY[2];
-	int nX, nY;
+	int vX[2], vY[2], vZ[2];
+	int nX, nY, nZ;
 
 	// Shrink render size
 	screenW = 30; screenH = 30;
@@ -161,27 +162,35 @@ static void RenderAxes()
 	ComputePixel(&wY[0]);
 	vY[0] = scrPt[0]-15; 
 	vY[1] = scrPt[1]-15;
+	ComputePixel(&wZ[0]);
+	vZ[0] = scrPt[0]-15; 
+	vZ[1] = scrPt[1]-15;
 
 	// Compute norm
-	nX = sqrt(vX[0]*vX[0]+vX[1]*vX[1]);
-	nY = sqrt(vY[0]*vY[0]+vY[1]*vY[1]);
+	nX = NORM2(vX);
+	nY = NORM2(vY);
+	nZ = NORM2(vZ);
 	
 	// Reset block
 	tgi_setcolor (COLOR_BACK);
-	tgi_bar(0, 169, screenW, 169+screenH);
+	tgi_bar(0, 159, screenW, 159+screenH);
 	tgi_setcolor (COLOR_FORE);
-	tgi_line(0, 169, 30, 169);
-	tgi_line(30, 169, 30, 199);
+	tgi_line(0, 159, 30, 159);
+	tgi_line(30, 159, 30, 189);
 	
 	// Draw axes and labels
 	if (nX > 0) {
-		DrawLine(14-(15*vX[0])/nX, 183-(15*vX[1])/nX, 14+(7*vX[0])/nX, 183+(7*vX[1])/nX);
-		tgi_outtextxy(14+(11*vX[0])/nX-2, 183+(11*vX[1])/nX+2, "x");
-	} else { tgi_outtextxy(14, 183, "x"); }
+		DrawLine(14-(15*vX[0])/nX, 173-(15*vX[1])/nX, 14+(7*vX[0])/nX, 173+(7*vX[1])/nX);
+		tgi_outtextxy(14+(11*vX[0])/nX-2, 173+(11*vX[1])/nX+2, "x");
+	} else { tgi_outtextxy(14, 173, "x"); }
 	if (nY > 0) {
-		DrawLine(14-(15*vY[0])/nY, 183-(15*vY[1])/nY, 14+(7*vY[0])/nY, 183+(7*vY[1])/nY);
-		tgi_outtextxy(14+(11*vY[0])/nY-2, 183+(11*vY[1])/nY+2, "y");
-	} else { tgi_outtextxy(14, 183, "y"); }
+		DrawLine(14-(15*vY[0])/nY, 173-(15*vY[1])/nY, 14+(7*vY[0])/nY, 173+(7*vY[1])/nY);
+		tgi_outtextxy(14+(11*vY[0])/nY-2, 173+(11*vY[1])/nY+2, "y");
+	} else { tgi_outtextxy(14, 173, "y"); }
+	if (nZ > 0) {
+		DrawLine(14-(15*vZ[0])/nZ, 173-(15*vZ[1])/nZ, 14+(7*vZ[0])/nZ, 173+(7*vZ[1])/nZ);
+		tgi_outtextxy(14+(11*vZ[0])/nZ-2, 173+(11*vZ[1])/nZ+2, "z");
+	} else { tgi_outtextxy(14, 173, "z"); }
 	
 	// Restore render size
 	screenW = 220; screenH = 190;

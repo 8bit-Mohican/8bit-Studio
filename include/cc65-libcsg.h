@@ -5,6 +5,8 @@
 // Credits: Adaptation from Net3DBool C# Library
 // 			Tolerancing removed, as we are using fixed point...
 
+#include "cc65-libmath.h"
+
 static void Transform(fix8 pos[3], fix8 rot[3], fix8 dim[3], int nTris, int nVerts, int **tris, fix8 **norms, fix8 **verts)
 {
 	int vertices[3];	

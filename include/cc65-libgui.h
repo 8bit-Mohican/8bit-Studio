@@ -227,11 +227,11 @@ static void DrawStatus (const char *message)
 {
 	// Reset background
 	tgi_setcolor (COLOR_BACK);
-	tgi_bar(31, 191, 319, 199);
+	tgi_bar(0, 191, 319, 199);
 	
 	// Output message
 	tgi_setcolor (COLOR_FORE);
-	tgi_outtextxy(40, 198, message);
+	tgi_outtextxy(10, 198, message);
 }
 
 static void DrawPerf (int num, clock_t time)
@@ -256,7 +256,7 @@ static void DrawGUI (const char *names[], fix8 pos[3], fix8 rot[3], fix8 dim[3])
 	tgi_setcolor (COLOR_FORE);
 	tgi_line(220, 0, 220, 190);
 	tgi_line(220, 115, 319, 115);
-	tgi_line(31, 190, 319, 190);
+	tgi_line(0, 190, 319, 190);
 	
 	// Top Section
 	tgi_outtextxy(240, 10, "C64 Studio");	

@@ -10,11 +10,12 @@
 #include "include/cc65-libmemory.h"
 #include "include/cc65-libmouse.h"
 #include "include/cc65-libprimitives.h"
-#include "include/cc65-librender.h"
-#include "include/cc65-libstl.h"
 #include "include/cc65-libcsg.h"
+#include "include/cc65-libstl.h"
+#include "include/cc65-libgui.h"
+#include "include/cc65-librender.h"
 
-#define MAXMESH 8
+#define MAXMESH 16
 
 
 /*****************************************************************************/
@@ -64,9 +65,9 @@ int main (void)
 		rot[i][0] = Int2Fix8(0);   rot[i][1] = Int2Fix8(0);  rot[i][2] = Int2Fix8(0);	
 		dim[i][0] = Int2Fix8(15);  dim[i][1] = Int2Fix8(15); dim[i][2] = Int2Fix8(15);		
 	}
-	pos[0][0] = Int2Fix8(-10); pos[0][1] = Int2Fix8(10); pos[0][2] = Int2Fix8(0);	
-	pos[1][0] = Int2Fix8(-10); pos[1][1] = Int2Fix8(0);  pos[1][2] = Int2Fix8(0);	
-	pos[2][0] = Int2Fix8(-10); pos[2][1] = Int2Fix8(0);  pos[2][2] = Int2Fix8(-10);	
+	pos[0][0] = Int2Fix8(10); pos[0][1] = Int2Fix8(-10); pos[0][2] = Int2Fix8(0);	
+	pos[1][0] = Int2Fix8(10); pos[1][1] = Int2Fix8(0);  pos[1][2] = Int2Fix8(0);	
+	pos[2][0] = Int2Fix8(10); pos[2][1] = Int2Fix8(0);  pos[2][2] = Int2Fix8(10);	
 	rot[2][0] = Int2Fix8(45);  rot[2][1] = Int2Fix8(0);  rot[2][2] = Int2Fix8(0);	
 	dim[2][0] = Int2Fix8(10);  dim[2][1] = Int2Fix8(10); dim[2][2] = Int2Fix8(10);
 	names[0] = CreateSphere(20, &nVerts[0], &nTris[0], &verts[0], &norms[0], &tris[0], &pxls[0]);
@@ -138,7 +139,7 @@ int main (void)
 			// Located in viewport part?
 			if (info.pos.x < 220) {
 				// Reset axes
-				xCam = 30; zCam = 330;				
+				xCam = 40; zCam = 150;				
 				UpdateCamera();
 				RenderAxes();
 
