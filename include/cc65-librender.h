@@ -106,7 +106,7 @@ static void RenderMesh(int nTris, int nVerts, int **tris, fix8 **norms, fix8 **v
 			normal[0] = ReadFix8(norms, i*3+0);
 			normal[1] = ReadFix8(norms, i*3+1);
 			normal[2] = ReadFix8(norms, i*3+2);
-			if (V3dotV3(&normal[0],&camVec[0]) >= 0) {
+			if (V3dotV3(&normal[0],&camVec[0]) > -16) {
 				visible[i] = true;
 			} else {
 				visible[i] = false;			

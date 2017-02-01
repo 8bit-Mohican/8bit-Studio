@@ -2,10 +2,29 @@
 /*                                CSG Library                                */
 /*****************************************************************************/
 
-// Credits: Adaptation from Net3DBool C# Library
-// 			Tolerancing removed, as we are using fixed point...
+// Credits: Adaptation from the Net3DBool C# Library
+// 			Tolerancing has been removed, since we are using fixed point...
 
 #include "cc65-libmath.h"
+
+#define BOUNDARY 0
+#define EDGE     1
+#define VERTEX   2
+
+typedef struct {
+	fix8 direction[3];
+	fix8 point[3];
+} Line;
+
+typedef struct {
+	fix8 startPoint[3];
+	fix8 endPoint[3];
+	fix8 startDist;
+	fix8 endDist;
+	char type;
+	int index;
+} Segment;
+
 
 static void Transform(fix8 pos[3], fix8 rot[3], fix8 dim[3], int nTris, int nVerts, int **tris, fix8 **norms, fix8 **verts)
 {
@@ -137,7 +156,7 @@ static fix8 DistanceToPlane(int indx1, fix8 **verts1, int indx2, fix8 **verts2, 
 	return (a*x1 + b*y1 + c*z1 + d)/256;
 }
 
-static void IntersectFaces(int indx1, fix8 **verts1, int tri1, fix8 **norms1, int indx2, fix8 **verts2, int tri2, fix8 **norms2, fix8 *pt, fix8 *dir) 
+static void IntersectFacesToLine(int indx1, fix8 **verts1, int tri1, fix8 **norms1, int indx2, fix8 **verts2, int tri2, fix8 **norms2, Line *line) 
 {
 	fix8 x1,y1,z1,x2,y2,z2,d1,d2;
 	fix8 uX,uY,uZ,vX,vY,vZ,norm;
@@ -151,10 +170,10 @@ static void IntersectFaces(int indx1, fix8 **verts1, int tri1, fix8 **norms1, in
 	vZ = ReadFix8(norms2,tri2*3+2);
 	
 	// Compute direction from cross product
-	dir[0] = (uY*vZ - uZ*vY)/256;
-	dir[1] = (uZ*vX - uX*vZ)/256;
-	dir[2] = (uX*vY - uY*vX)/256;
-	norm = sqrt(dir[0]*dir[0] + dir[1]*dir[1] + dir[2]*dir[2]);
+	line->direction[0] = (uY*vZ - uZ*vY)/256;
+	line->direction[1] = (uZ*vX - uX*vZ)/256;
+	line->direction[2] = (uX*vY - uY*vX)/256;
+	norm = NORM3(line->direction);
 
 	//if direction length is not zero (the planes aren't parallel )...
 	if (norm > 0) {
@@ -169,35 +188,449 @@ static void IntersectFaces(int indx1, fix8 **verts1, int tri1, fix8 **norms1, in
 		// Getting a line point, zero is set to a coordinate whose direction component isn't zero (line intersecting its origin plan)
 		d1 = -(uX * x1 + uY * y1 + uZ * z1);
 		d2 = -(vX * x2 + vY * y2 + vZ * z2);
-		if (dir[0] != 0) {
-			pt[0] = 0;
-			pt[1] = (d2 * uZ - d1 * vZ) / dir[0];
-			pt[2] = (d1 * vY - d2 * uY) / dir[0];
-		} else if (dir[1] != 0) {
-			pt[0] = (d1 * vZ - d2 * uZ) / dir[1];
-			pt[1] = 0;
-			pt[2] = (d2 * uX - d1 * vX) / dir[1];
+		if (line->direction[0] != 0) {
+			line->point[0] = 0;
+			line->point[1] = (d2 * uZ - d1 * vZ) / line->direction[0];
+			line->point[2] = (d1 * vY - d2 * uY) / line->direction[0];
+		} else if (line->direction[1] != 0) {
+			line->point[0] = (d1 * vZ - d2 * uZ) / line->direction[1];
+			line->point[1] = 0;
+			line->point[2] = (d2 * uX - d1 * vX) / line->direction[1];
 		} else {
-			pt[0] = (d2 * uY - d1 * vY) / dir[2];
-			pt[1] = (d1 * vX - d2 * uX) / dir[2];
-			pt[2] = 0;
+			line->point[0] = (d2 * uY - d1 * vY) / line->direction[2];
+			line->point[1] = (d1 * vX - d2 * uX) / line->direction[2];
+			line->point[2] = 0;
 		}
 	}
 	
 	// Normalize
-	dir[0] = (dir[0]*256/norm);
-	dir[1] = (dir[1]*256/norm);
-	dir[2] = (dir[2]*256/norm);
+	line->direction[0] = (line->direction[0]*256/norm);
+	line->direction[1] = (line->direction[1]*256/norm);
+	line->direction[2] = (line->direction[2]*256/norm);
+}
+
+static void DefineLine(int indx1, int indx2, fix8 **verts, Line *line)
+{
+	// Define new line based on two points
+	line->point[0] = ReadFix8(verts,indx1*6+3);
+	line->point[1] = ReadFix8(verts,indx1*6+4);
+	line->point[2] = ReadFix8(verts,indx1*6+5);
+	line->direction[0] = ReadFix8(verts,indx2*6+3) - line->point[0];
+	line->direction[1] = ReadFix8(verts,indx2*6+4) - line->point[1];
+	line->direction[2] = ReadFix8(verts,indx2*6+5) - line->point[2];
+}
+
+static void IntersectLinesToPoint(Line *line1, Line *line2, fix8 *point)
+{
+	fix8 frac;
+	
+	// Find the correct case, and compute fraction
+	if (abs(line1->direction[1] * line2->direction[0] - line1->direction[0] * line2->direction[1]) > 0) 
+	{
+		frac = ( -line1->point[1] * line2->direction[0] + line2->point[1] * line2->direction[0] + 
+		          line1->point[0] * line2->direction[1] - line2->point[0] * line2->direction[1] ) * 256 / 
+					( line1->direction[1] * line2->direction[0] - line1->direction[0] * line2->direction[1] );
+	}
+	else if (abs(line1->direction[0] * line2->direction[2] - line1->direction[2] * line2->direction[0]) > 0) 
+	{
+		frac = ( -line1->point[0] * line2->direction[2] + line2->point[0] * line2->direction[2] + 
+			      line1->point[2] * line2->direction[0] - line2->point[2] * line2->direction[0] ) * 256 / 
+					( line1->direction[0] * line2->direction[2] - line1->direction[2] * line2->direction[0]);
+	}
+	else if (abs(line1->direction[2] * line2->direction[1] - line1->direction[1] * line2->direction[2]) > 0) 
+	{
+		frac = ( -line1->point[2] * line2->direction[1] + line2->point[2] * line2->direction[1] + 
+			      line1->point[1] * line2->direction[2] - line2->point[1] * line2->direction[2]) * 256 / 
+					( line1->direction[2] * line2->direction[1] - line1->direction[1] * line2->direction[2]);
+	}
+	else {
+		return;
+	}
+
+	// Return the point on the line
+	point[0] = line1->point[0] + line1->direction[0] * frac / 256;
+	point[1] = line1->point[1] + line1->direction[1] * frac / 256;
+	point[2] = line1->point[2] + line1->direction[2] * frac / 256;
+}
+
+static fix8 LineToPointDistance(Line *line, fix8 *point)
+{
+	fix8 vect[3];
+	vect[0] = point[0] - line->point[0];
+	vect[1] = point[1] - line->point[1];
+	vect[2] = point[2] - line->point[2];
+	if (V3dotV3(vect, line->direction) < 0) {
+		return -NORM3(vect);
+	} else {
+		return NORM3(vect);		
+	}
+}
+
+static fix8 PointToPointDistance(fix8 *p1, fix8 *p2)
+{
+	fix8 vect[3];
+	vect[0] = p2[0] - p1[0];
+	vect[1] = p2[1] - p1[1];
+	vect[2] = p2[2] - p1[2];
+	return NORM3(vect);
+}
+
+static void SwapSegmentEnds(Segment *seg)
+{
+	fix8 tempPoint[3];
+	fix8 tempDist;
+	
+	// Backup start point
+	tempPoint[0] = seg->startPoint[0];
+	tempPoint[1] = seg->startPoint[1];
+	tempPoint[2] = seg->startPoint[2];
+	tempDist = seg->startDist;
+	
+	// Swap start/end points
+	seg->startPoint[0] = seg->endPoint[0];
+	seg->startPoint[1] = seg->endPoint[1];
+	seg->startPoint[2] = seg->endPoint[2];
+	seg->startDist = seg->endDist;
+	seg->endPoint[0] = tempPoint[0];
+	seg->endPoint[1] = tempPoint[1];
+	seg->endPoint[2] = tempPoint[2];
+	seg->endDist = tempDist;
+}
+
+static void SetSegmentVertex(Line *line, int indx, fix8 **verts, Segment *seg)
+{
+	// First point?
+	if (seg->index == 0) {
+		// Set as start point		
+		seg->startPoint[0] = ReadFix8(verts,indx*6+3);
+		seg->startPoint[1] = ReadFix8(verts,indx*6+4);
+		seg->startPoint[2] = ReadFix8(verts,indx*6+5);
+		seg->startDist = LineToPointDistance(line, seg->startPoint);
+		seg->index++;
+		
+		// Set the segment type
+		seg->type = VERTEX;
+		return;
+	}
+	
+	// Second point?
+	if (seg->index == 1) {
+		// Set as end point		
+		seg->endPoint[0] = ReadFix8(verts,indx*6+3);
+		seg->endPoint[1] = ReadFix8(verts,indx*6+4);
+		seg->endPoint[2] = ReadFix8(verts,indx*6+5);
+		seg->endDist = LineToPointDistance(line, seg->endPoint);
+		seg->index++;
+		
+		// Set the segment type
+		if (PointToPointDistance(&(seg->startPoint[0]), &(seg->endPoint[1])) > 0) {
+			seg->type = EDGE;
+		}
+	}	
+	
+	// Check distances
+	if (seg->startDist > seg->endDist) {
+		SwapSegmentEnds(seg);
+	}	
+}
+
+static void SetSegmentEdge(Line *line, int indx1, int indx2, fix8 **verts, Segment *seg)
+{
+	Line edgeLine;
+	
+	// Intersect 2 lines to find point
+	DefineLine(indx1, indx2, verts, &edgeLine);
+	if (seg->index == 0) {
+		// Save as start point
+		IntersectLinesToPoint(line, &edgeLine, &(seg->startPoint[0]));
+		seg->startDist = LineToPointDistance(line, seg->startPoint);		
+		seg->index++;	
+
+		// Set the segment type
+		seg->type = VERTEX;
+		
+	} else if (seg->index == 1) {
+		// Set as end point				
+		IntersectLinesToPoint(line, &edgeLine, &(seg->endPoint[0]));
+		seg->endDist = LineToPointDistance(line, seg->endPoint);
+		seg->index++;
+
+		// Set the segment type
+		if (PointToPointDistance(&(seg->startPoint[0]), &(seg->endPoint[1])) > 0) {
+			seg->type = EDGE;
+		}		
+	}
+	
+	// Check distances
+	if (seg->startDist > seg->endDist) {
+		SwapSegmentEnds(seg);
+	}	
+}
+
+void IntersectLineAndFaceToSegment(Line *line, int indx[3], fix8 **verts, int sign0, int sign1, int sign2, Segment *seg)
+{
+	seg->index = 0;
+	
+	// Vertex 0 is an end?
+	if (sign0 == 0) {
+		SetSegmentVertex(line, indx[0], verts, seg);
+		if (sign1 == sign2) {
+			SetSegmentVertex(line, indx[0], verts, seg);
+		}
+	}
+	
+	// Vertex 1 is an end?
+	if (sign1 == 0) {
+		SetSegmentVertex(line, indx[1], verts, seg);
+		if (sign2 == sign0) {
+			SetSegmentVertex(line, indx[1], verts, seg);
+		}
+	}
+
+	// Vertex 2 is an end?
+	if (sign2 == 0) {
+		SetSegmentVertex(line, indx[2], verts, seg);
+		if (sign0 == sign1) {
+			SetSegmentVertex(line, indx[2], verts, seg);
+		}
+	}
+	
+	// Are both ends defined?
+	if (seg->index < 2) {
+		// Use V0-V1?
+		if ((sign0 == 1 && sign1 == -1) || (sign0 == -1 && sign1 == 1)) {
+			SetSegmentEdge(line, indx[0], indx[1], verts, seg);			
+		}
+		// Use V1-V2?
+		if ((sign1 == 1 && sign2 == -1) || (sign1 == -1 && sign2 == 1)) {
+			SetSegmentEdge(line, indx[1], indx[2], verts, seg);						
+		}
+		// Use V2-V0?
+		if ((sign2 == 1 && sign0 == -1) || (sign2 == -1 && sign0 == 1)) {
+			SetSegmentEdge(line, indx[2], indx[0], verts, seg);			
+		}		
+	}	
+}
+
+static void SplitFace(int indx, Segment *seg1, Segment *seg2)
+{
+	fix8 startPoint[3],endPoint[3];
+	char startType,middleType,endType;
+	fix8 startDist,endDist;
+	
+	printf ("Splitting Face!\n");	
+/*
+	Vertex startPosVertex, endPosVertex;
+	Point3d startPos, endPos;
+	int startType, endType, middleType;
+	double startDist, endDist;
+
+	Face face = getFace(facePos);
+	Vertex startVertex = segment1.getStartVertex();
+	Vertex endVertex = segment1.getEndVertex();
+*/
+	// Deepest start point
+	if (seg2->startDist > seg1->startDist) {
+		startPoint[0] = seg2->startPoint[0];
+		startPoint[1] = seg2->startPoint[1];
+		startPoint[2] = seg2->startPoint[2];
+		startDist = seg2->startDist;
+		startType = seg1->type;
+	} else {
+		startPoint[0] = seg1->startPoint[0];
+		startPoint[1] = seg1->startPoint[1];
+		startPoint[2] = seg1->startPoint[2];
+		startDist = seg1->startDist;
+		startType = VERTEX;
+	}
+
+	// Deepest end point
+	if (seg2->endDist < seg1->endDist) {
+		endPoint[0] = seg2->endPoint[0];
+		endPoint[1] = seg2->endPoint[1];
+		endPoint[2] = seg2->endPoint[2];
+		endDist = seg2->endDist;
+		endType = seg1->type;
+	} else {
+		endPoint[0] = seg1->endPoint[0];
+		endPoint[1] = seg1->endPoint[1];
+		endPoint[2] = seg1->endPoint[2];
+		endDist = seg1->endDist;
+		endType = VERTEX;		
+	}       
+	middleType = seg1->type;
+
+/*
+	//set vertex to BOUNDARY if it is start type        
+	if (startType == VERTEX) {
+		startVertex.setStatus(Vertex.BOUNDARY);
+	}
+
+	//set vertex to BOUNDARY if it is end type
+	if (endType == Segment.VERTEX)
+	{
+		endVertex.setStatus(Vertex.BOUNDARY);
+	}
+
+	//VERTEX-_______-VERTEX 
+	if (startType == Segment.VERTEX && endType == Segment.VERTEX)
+	{
+		return;
+	}
+
+	//______-EDGE-______
+	else if (middleType == Segment.EDGE)
+	{
+		//gets the edge 
+		int splitEdge;
+		if ((startVertex == face.v1 && endVertex == face.v2) || (startVertex == face.v2 && endVertex == face.v1))
+		{
+			splitEdge = 1;
+		}
+		else if ((startVertex == face.v2 && endVertex == face.v3) || (startVertex == face.v3 && endVertex == face.v2))
+		{     
+			splitEdge = 2; 
+		}
+		else
+		{
+			splitEdge = 3;
+		} 
+
+		//VERTEX-EDGE-EDGE
+		if (startType == Segment.VERTEX)
+		{
+			breakFaceInTwo(facePos, endPos, splitEdge);
+			return;
+		}
+
+			//EDGE-EDGE-VERTEX
+			else if (endType == Segment.VERTEX)
+		{
+			breakFaceInTwo(facePos, startPos, splitEdge);
+			return;
+		}
+
+			// EDGE-EDGE-EDGE
+			else if (startDist == endDist)
+		{
+			breakFaceInTwo(facePos, endPos, splitEdge);
+		}
+		else
+		{
+			if ((startVertex == face.v1 && endVertex == face.v2) || (startVertex == face.v2 && endVertex == face.v3) || (startVertex == face.v3 && endVertex == face.v1))
+			{
+				breakFaceInThree(facePos, startPos, endPos, splitEdge);
+			}
+			else
+			{
+				breakFaceInThree(facePos, endPos, startPos, splitEdge);
+			}
+		}
+		return;
+	}
+
+	//______-FACE-______
+
+	//VERTEX-FACE-EDGE
+	else if (startType == Segment.VERTEX && endType == Segment.EDGE)
+	{
+		breakFaceInTwo(facePos, endPos, endVertex);
+	}
+	//EDGE-FACE-VERTEX
+	else if (startType == Segment.EDGE && endType == Segment.VERTEX)
+	{
+		breakFaceInTwo(facePos, startPos, startVertex);
+	}
+	//VERTEX-FACE-FACE
+	else if (startType == Segment.VERTEX && endType == Segment.FACE)
+	{
+		breakFaceInThree(facePos, endPos, startVertex);
+	}
+	//FACE-FACE-VERTEX
+	else if (startType == Segment.FACE && endType == Segment.VERTEX)
+	{
+		breakFaceInThree(facePos, startPos, endVertex);
+	}
+	//EDGE-FACE-EDGE
+	else if (startType == Segment.EDGE && endType == Segment.EDGE)
+	{
+		breakFaceInThree(facePos, startPos, endPos, startVertex, endVertex);
+	}
+	//EDGE-FACE-FACE
+	else if (startType == Segment.EDGE && endType == Segment.FACE)
+	{
+		breakFaceInFour(facePos, startPos, endPos, startVertex);
+	}
+	//FACE-FACE-EDGE
+	else if (startType == Segment.FACE && endType == Segment.EDGE)
+	{
+		breakFaceInFour(facePos, endPos, startPos, endVertex);
+	}
+	//FACE-FACE-FACE
+	else if (startType == Segment.FACE && endType == Segment.FACE)
+	{
+		Vector3d segmentVector = new Vector3d(startPos.x - endPos.x, startPos.y - endPos.y, startPos.z - endPos.z);
+
+		//if the intersection segment is a point only...
+		if (Math.Abs(segmentVector.x) < TOL && Math.Abs(segmentVector.y) < TOL && Math.Abs(segmentVector.z) < TOL)
+		{
+			breakFaceInThree(facePos, startPos);
+			return;
+		}
+
+		//gets the vertex more lined with the intersection segment
+		int linedVertex;
+		Point3d linedVertexPos;
+		Vector3d vertexVector = new Vector3d(endPos.x - face.v1.x, endPos.y - face.v1.y, endPos.z - face.v1.z);
+		vertexVector.normalize();
+		double dot1 = Math.Abs(segmentVector.dot(vertexVector));
+		vertexVector = new Vector3d(endPos.x - face.v2.x, endPos.y - face.v2.y, endPos.z - face.v2.z);
+		vertexVector.normalize();
+		double dot2 = Math.Abs(segmentVector.dot(vertexVector));
+		vertexVector = new Vector3d(endPos.x - face.v3.x, endPos.y - face.v3.y, endPos.z - face.v3.z);
+		vertexVector.normalize();
+		double dot3 = Math.Abs(segmentVector.dot(vertexVector));
+		if (dot1 > dot2 && dot1 > dot3)
+		{
+			linedVertex = 1;
+			linedVertexPos = face.v1.getPosition();
+		}
+		else if (dot2 > dot3 && dot2 > dot1)
+		{
+			linedVertex = 2;
+			linedVertexPos = face.v2.getPosition();
+		}
+		else
+		{
+			linedVertex = 3;
+			linedVertexPos = face.v3.getPosition();
+		}
+
+		// Now find which of the intersection endpoints is nearest to that vertex.
+		if (linedVertexPos.distance(startPos) > linedVertexPos.distance(endPos))
+		{
+			breakFaceInFive(facePos, startPos, endPos, linedVertex);
+		}
+		else
+		{
+			breakFaceInFive(facePos, endPos, startPos, linedVertex);
+		}
+	}
+*/
 }
 
 static void SplitFaces(int nTris1, int nVerts1, int **tris1, fix8 **norms1, fix8 **verts1, int nTris2, int nVerts2, int **tris2, fix8 **norms2, fix8 **verts2)
 {
-	fix8 mBounds1[6], mBounds2[6];
-	fix8 fBounds1[6], fBounds2[6];
-	fix8 distF1V1toF2, distF1V2toF2, distF1V3toF2;
-	fix8 distF2V1toF1, distF2V2toF1, distF2V3toF1;
-	int indxs1[3], indxs2[3];
-	fix8 lPt[3], lDir[3];
+	// Variables used in computation
+	static fix8 mBounds1[6], mBounds2[6];
+	static fix8 fBounds1[6], fBounds2[6];
+	static fix8 distF1V1toF2, distF1V2toF2, distF1V3toF2;
+	static fix8 distF2V1toF1, distF2V2toF1, distF2V3toF1;
+	static int indxs1[3], indxs2[3];
+	Segment seg1, seg2;
+	Line line;
+	
+	// Variables for benchmarking
 	unsigned long sec;
     unsigned sec10;
 	clock_t time;	
@@ -260,13 +693,23 @@ static void SplitFaces(int nTris1, int nVerts1, int **tris1, fix8 **norms1, fix8
 						distF2V2toF1 = DistanceToPlane(indxs2[1], verts2, indxs1[0], verts1, i, norms1);
 						distF2V3toF1 = DistanceToPlane(indxs2[2], verts2, indxs1[0], verts1, i, norms1);		
 
-						//if the signs are not equal...
+						// If the signs are not equal...
 						if (!(SIGN(distF2V1toF1) == SIGN(distF2V2toF1) && SIGN(distF2V2toF1) == SIGN(distF2V3toF1))) {
 
 							// Compute intersect line of faces
-							IntersectFaces(indxs1[0], verts1, i, norms1, indxs2[1], verts2, j, norms2, &lPt[0], &lDir[0]);
+							IntersectFacesToLine(indxs1[0], verts1, i, norms1, indxs2[1], verts2, j, norms2, &line);
 							
-							printf ("Intersecting Faces!\n");	
+							// Compute intersect segments
+							IntersectLineAndFaceToSegment(&line, indxs1, verts1, SIGN(distF1V1toF2), SIGN(distF1V2toF2), SIGN(distF1V3toF2), &seg1);
+							IntersectLineAndFaceToSegment(&line, indxs2, verts2, SIGN(distF2V1toF1), SIGN(distF2V2toF1), SIGN(distF2V3toF1), &seg2);
+							
+							// Do the two segments overlap?
+							if (seg1.endDist < seg2.startDist || seg2.endDist < seg1.startDist) {
+								continue;
+							}
+							
+							// Subdivide non-planar polygons
+							SplitFace(i, &seg1, &seg2);
 						}
 					}
 				}
