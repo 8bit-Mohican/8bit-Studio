@@ -55,7 +55,7 @@ int scrPt[2];
 
 static void ComputePixel(fix8 *wldPt)
 {
-	M43mulV3(&worldToCamera[0], wldPt, &camPt[0]);
+	M43multV3(&worldToCamera[0], wldPt, &camPt[0]);
     scrPt[0] = screenW * (canvasW/2 - (256*camPt[0])/camPt[2]) / canvasW;
     scrPt[1] = screenH - screenH * (canvasH/2 - (256*camPt[1])/camPt[2]) / canvasH;
 }

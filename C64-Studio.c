@@ -65,12 +65,12 @@ int main (void)
 		rot[i][0] = Int2Fix8(0);   rot[i][1] = Int2Fix8(0);  rot[i][2] = Int2Fix8(0);	
 		dim[i][0] = Int2Fix8(15);  dim[i][1] = Int2Fix8(15); dim[i][2] = Int2Fix8(15);		
 	}
-	pos[0][0] = Int2Fix8(10); pos[0][1] = Int2Fix8(-10); pos[0][2] = Int2Fix8(0);	
-	pos[1][0] = Int2Fix8(10); pos[1][1] = Int2Fix8(0);  pos[1][2] = Int2Fix8(0);	
-	pos[2][0] = Int2Fix8(10); pos[2][1] = Int2Fix8(0);  pos[2][2] = Int2Fix8(10);	
+	pos[0][0] = Int2Fix8(-20); pos[0][1] = Int2Fix8(0); pos[0][2] = Int2Fix8(0);	
+	pos[1][0] = Int2Fix8(0); pos[1][1] = Int2Fix8(0);  pos[1][2] = Int2Fix8(0);	
+	pos[2][0] = Int2Fix8(20); pos[2][1] = Int2Fix8(0);  pos[2][2] = Int2Fix8(0);	
 	rot[2][0] = Int2Fix8(45);  rot[2][1] = Int2Fix8(0);  rot[2][2] = Int2Fix8(0);	
 	dim[2][0] = Int2Fix8(10);  dim[2][1] = Int2Fix8(10); dim[2][2] = Int2Fix8(10);
-	names[0] = CreateSphere(20, &nVerts[0], &nTris[0], &verts[0], &norms[0], &tris[0], &pxls[0]);
+	names[0] = CreateSphere(60, &nVerts[0], &nTris[0], &verts[0], &norms[0], &tris[0], &pxls[0]);
 	names[1] = CreateCylinder(8, &nVerts[1], &nTris[1], &verts[1], &norms[1], &tris[1], &pxls[1]);
 	names[2] = CreateBox(&nVerts[2], &nTris[2], &verts[2], &norms[2], &tris[2], &pxls[2]);
 
