@@ -13,6 +13,7 @@
 #include "include/cc65-libcsg.h"
 #include "include/cc65-libstl.h"
 #include "include/cc65-libgui.h"
+#include "include/cc65-libhttp.h"
 #include "include/cc65-librender.h"
 
 #define MAXMESH 16
@@ -48,6 +49,7 @@ int main (void)
 	// Init Memory
 	InitMemory();
 	InitMouse();
+	InitHTTP();
 	InitTGI();
 	
 	// Initialize position/dimension
