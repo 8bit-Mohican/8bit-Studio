@@ -13,7 +13,6 @@
 #include "include/cc65-libcsg.h"
 #include "include/cc65-libstl.h"
 #include "include/cc65-libgui.h"
-#include "include/cc65-libhttp.h"
 #include "include/cc65-librender.h"
 
 #define MAXMESH 16
@@ -49,7 +48,6 @@ int main (void)
 	// Init Memory
 	InitMemory();
 	InitMouse();
-	InitHTTP();
 	InitTGI();
 	
 	// Initialize position/dimension
@@ -67,7 +65,7 @@ int main (void)
 		rot[i][0] = Int2Fix8(0);   rot[i][1] = Int2Fix8(0);  rot[i][2] = Int2Fix8(0);	
 		dim[i][0] = Int2Fix8(15);  dim[i][1] = Int2Fix8(15); dim[i][2] = Int2Fix8(15);		
 	}
-	pos[0][0] = Int2Fix8(-20); pos[0][1] = Int2Fix8(0); pos[0][2] = Int2Fix8(0);	
+	pos[0][0] = Int2Fix8(-13); pos[0][1] = Int2Fix8(0); pos[0][2] = Int2Fix8(0);	
 	pos[1][0] = Int2Fix8(0); pos[1][1] = Int2Fix8(0);  pos[1][2] = Int2Fix8(0);	
 	pos[2][0] = Int2Fix8(20); pos[2][1] = Int2Fix8(0);  pos[2][2] = Int2Fix8(0);	
 	rot[2][0] = Int2Fix8(45);  rot[2][1] = Int2Fix8(0);  rot[2][2] = Int2Fix8(0);	

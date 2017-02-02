@@ -25,7 +25,6 @@ typedef struct {
 	int index;
 } Segment;
 
-
 static void Transform(fix8 pos[3], fix8 rot[3], fix8 dim[3], int nTris, int nVerts, int **tris, fix8 **norms, fix8 **verts)
 {
 	int vertices[3];	
@@ -58,7 +57,7 @@ static void Transform(fix8 pos[3], fix8 rot[3], fix8 dim[3], int nTris, int nVer
 		vertices[1] = ReadInt(tris,i*3+1);
 		vertices[2] = ReadInt(tris,i*3+2);
 		
-		// Compute face vectors 
+		// Compute face vectors
 		uX = ReadFix8(verts,vertices[1]*6+3) - ReadFix8(verts,vertices[0]*6+3);
 		uY = ReadFix8(verts,vertices[1]*6+4) - ReadFix8(verts,vertices[0]*6+4);
 		uZ = ReadFix8(verts,vertices[1]*6+5) - ReadFix8(verts,vertices[0]*6+5);
@@ -419,16 +418,16 @@ static void SplitFace(int indx, Segment *seg1, Segment *seg2)
 	fix8 startDist,endDist;
 	
 	printf ("Splitting Face!\n");	
-/*
-	Vertex startPosVertex, endPosVertex;
-	Point3d startPos, endPos;
-	int startType, endType, middleType;
-	double startDist, endDist;
 
-	Face face = getFace(facePos);
-	Vertex startVertex = segment1.getStartVertex();
-	Vertex endVertex = segment1.getEndVertex();
-*/
+//	Vertex startPosVertex, endPosVertex;
+//	Point3d startPos, endPos;
+//	int startType, endType, middleType;
+//	double startDist, endDist;
+
+//	Face face = getFace(facePos);
+//	Vertex startVertex = segment1.getStartVertex();
+//	Vertex endVertex = segment1.getEndVertex();
+
 	// Deepest start point
 	if (seg2->startDist > seg1->startDist) {
 		startPoint[0] = seg2->startPoint[0];
