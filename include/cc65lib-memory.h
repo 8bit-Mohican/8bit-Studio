@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <em.h>
 
-#include "cc65-libfix8.h"
+#include "cc65lib-fix8.h"
 
 #define MASK_RASTER   1  // 2^0, bit 0
 #define MASK_DRAW     2  // 2^1, bit 1

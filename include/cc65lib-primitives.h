@@ -2,9 +2,9 @@
 /*                            Primitives Library                             */
 /*****************************************************************************/
 
-#include "cc65-libmath.h"
-#include "cc65-libmatrix.h"
-#include "cc65-libmemory.h"
+#include "cc65lib-math.h"
+#include "cc65lib-matrix.h"
+#include "cc65lib-memory.h"
 
 const char* CreateBox(int *nVerts, int *nTris, fix8 **verts, fix8 **norms, int **tris, int **pxls)
 {

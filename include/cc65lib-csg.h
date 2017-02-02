@@ -5,7 +5,7 @@
 // Credits: Adaptation from the Net3DBool C# Library
 // 			Tolerancing has been removed, since we are using fixed point...
 
-#include "cc65-libmath.h"
+#include "cc65lib-math.h"
 
 #define BOUNDARY 0
 #define EDGE     1

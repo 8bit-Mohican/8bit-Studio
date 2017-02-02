@@ -5,7 +5,7 @@
 #ifndef DEFINE_MATRIX
 #define DEFINE_MATRIX
 
-#include "cc65-libfix8.h"
+#include "cc65lib-fix8.h"
 
 static void M43multV3(fix8 *mat, fix8 *vec, fix8 *out)
 {

@@ -7,9 +7,9 @@
 #include <string.h>
 #include <time.h>
 
-#include "include/cc65-libfix8.h"
-#include "include/cc65-libmouse.h"
-#include "include/cc65-libgui.h"
+#include "include/cc65lib-fix8.h"
+#include "include/cc65lib-mouse.h"
+#include "include/cc65lib-gui.h"
 
 /*****************************************************************************/
 /*                                 Main Code                                 */

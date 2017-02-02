@@ -4,9 +4,9 @@
 
 #include <stdbool.h>
 
-#include "cc65-libmath.h"
-#include "cc65-libmatrix.h"
-#include "cc65-libmemory.h"
+#include "cc65lib-math.h"
+#include "cc65lib-matrix.h"
+#include "cc65lib-memory.h"
 
 static int screenW = 220;
 static int screenH = 190;
