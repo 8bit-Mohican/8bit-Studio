@@ -46,6 +46,63 @@ const char* CreateBox(int *nVerts, int *nTris, fix8 **verts, fix8 **norms, int *
 	return name;
 } 
 
+const char* CreateCone(int faces, int *nVerts, int *nTris, fix8 **verts, fix8 **norms, int **tris, int **pxls)
+{
+	static char name[] = "Cone";
+	int v = 0;
+	int t = 0;
+	int i;
+	
+	// Allocate memory for triangles/normals/vertices
+	(*nTris) = 2*faces;
+	(*nVerts) = (faces+2);
+	MallocInt(tris, (*nTris)*3);
+	MallocFix8(norms, (*nTris)*3);
+	MallocFix8(verts, (*nVerts)*6);
+	
+	// Allocate pixel data in main memory (for fast drawing)
+	(*pxls) = (int*) malloc ((*nVerts)*2*sizeof(int));
+	
+	// Generate vertices
+	WriteFix8(verts, v++, 0);
+	WriteFix8(verts, v++, 0);
+	WriteFix8(verts, v++, -128);
+	v += 3;
+
+	WriteFix8(verts, v++, 0);
+	WriteFix8(verts, v++, 0);
+	WriteFix8(verts, v++, 128);	
+	v += 3;
+	
+	for (i = 0; i < faces; ++i) {
+		// Generate vertices
+		WriteFix8(verts, v++, cc65_cos((360*i)/faces)/2);
+		WriteFix8(verts, v++, cc65_sin((360*i)/faces)/2);
+		WriteFix8(verts, v++, -128);
+		v += 3;
+		
+		// Generate bottom triangle
+		WriteInt(tris, t++, i+2);
+		WriteInt(tris, t++, 0);
+		if (i < (faces-1)) {
+			WriteInt(tris, t++, i+3);		
+		} else {
+			WriteInt(tris, t++, 2);			
+		}
+		
+		// Generate side triangle
+		WriteInt(tris, t++, 1);
+		WriteInt(tris, t++, i+2);
+		if (i < (faces-1)) {
+			WriteInt(tris, t++, i+3);		
+		} else {
+			WriteInt(tris, t++, 2);			
+		}	
+	}
+	
+	return name;
+}
+
 const char* CreateCylinder(int faces, int *nVerts, int *nTris, fix8 **verts, fix8 **norms, int **tris, int **pxls)
 {
 	static char name[] = "Cylinder";

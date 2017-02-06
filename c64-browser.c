@@ -7,7 +7,6 @@
 #include <string.h>
 #include <time.h>
 
-#include "include/cc65lib-fix8.h"
 #include "include/cc65lib-mouse.h"
 #include "include/cc65lib-gui.h"
 
